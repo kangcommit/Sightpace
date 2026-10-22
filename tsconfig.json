@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    // Language and JSX runtime.
+    "target": "es2023",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+
+    // Module resolution and source aliases.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    // Import and module behavior.
+    "allowJs": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    // Type safety and dependency checking.
+    "strict": true,
+    // Next.js generated route validators contain intentionally unused imports.
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    // Build output and Next.js integration.
+    "noEmit": true,
+    "incremental": true,
+
+    // Next.js framework integration.
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    // Next.js generated type declarations.
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+
+    // Application and tool source files.
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
