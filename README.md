@@ -26,34 +26,34 @@ Before building your product, update the package name in `package.json`, replace
 
 ## Available commands
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start the development server. |
-| `pnpm build` | Create the production build. |
-| `pnpm start` | Start the standalone production server. |
-| `pnpm check` | Check formatting and lint rules with Biome. |
-| `pnpm check:fix` | Apply formatting and lint fixes with Biome. |
-| `pnpm typecheck` | Check TypeScript types. |
-| `pnpm test` | Run unit tests once. |
-| `pnpm test:watch` | Run unit tests in watch mode. |
-| `pnpm test:e2e` | Run browser tests with Playwright. |
-| `pnpm test:e2e:ui` | Open the Playwright test runner. |
-| `pnpm knip` | Check for unused files, exports, and dependencies. |
-| `pnpm verify` | Run formatting, lint, types, unit tests, build, and unused-code checks. |
+| Command            | Purpose                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| `pnpm dev`         | Start the development server.                                           |
+| `pnpm build`       | Create the production build.                                            |
+| `pnpm start`       | Start the standalone production server.                                 |
+| `pnpm check`       | Check formatting and lint rules with Biome.                             |
+| `pnpm check:fix`   | Apply formatting and lint fixes with Biome.                             |
+| `pnpm typecheck`   | Check TypeScript types.                                                 |
+| `pnpm test`        | Run unit tests once.                                                    |
+| `pnpm test:watch`  | Run unit tests in watch mode.                                           |
+| `pnpm test:e2e`    | Run browser tests with Playwright.                                      |
+| `pnpm test:e2e:ui` | Open the Playwright test runner.                                        |
+| `pnpm knip`        | Check for unused files, exports, and dependencies.                      |
+| `pnpm verify`      | Run formatting, lint, types, unit tests, build, and unused-code checks. |
 
 ## Project structure
 
-| Location | Responsibility |
-| --- | --- |
-| `src/app/` | Route definitions and page composition. |
-| `src/app/layout.tsx` | Application entry or root layout and providers. |
-| `src/components/` | Components shared across features. |
-| `src/components/ui/` | Reusable UI primitives owned by the application. |
+| Location              | Responsibility                                         |
+| --------------------- | ------------------------------------------------------ |
+| `src/app/`            | Route definitions and page composition.                |
+| `src/app/layout.tsx`  | Application entry or root layout and providers.        |
+| `src/components/`     | Components shared across features.                     |
+| `src/components/ui/`  | Reusable UI primitives owned by the application.       |
 | `src/app/globals.css` | Global styles, theme tokens, and Tailwind entry point. |
-| `tests/unit/` | Unit and component tests. |
-| `tests/e2e/` | Browser tests for user flows. |
-| `tests/setup.ts` | Shared unit-test setup. |
-| `components.json` | UI component tooling configuration. |
+| `tests/unit/`         | Unit and component tests.                              |
+| `tests/e2e/`          | Browser tests for user flows.                          |
+| `tests/setup.ts`      | Shared unit-test setup.                                |
+| `components.json`     | UI component tooling configuration.                    |
 
 The `@/` alias points to `src/`. Create `public/` when you need static assets served by filename.
 

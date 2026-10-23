@@ -17,8 +17,8 @@ export default function GlobalError({
 
   return (
     <main className="mx-auto flex min-h-[60svh] max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="font-medium text-muted-foreground text-sm">Something went wrong</p>
-      <h1 className="font-semibold text-3xl tracking-tight">We could not load this page.</h1>
+      <p className="text-muted-foreground text-sm font-medium">Something went wrong</p>
+      <h1 className="text-3xl font-semibold tracking-tight">We could not load this page.</h1>
       <p className="text-muted-foreground">
         Try again. If the problem continues, check the server logs using the request identifier.
       </p>
