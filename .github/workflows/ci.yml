@@ -36,6 +36,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Validate Prisma schema
+        run: pnpm db:validate
+
       - name: Run static checks and build
         run: pnpm run verify
 
