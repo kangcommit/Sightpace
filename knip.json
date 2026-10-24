@@ -3,5 +3,6 @@
   "ignoreIssues": {
     "src/components/ui/**": ["exports"],
     "src/app/**": ["exports"]
-  }
+  },
+  "ignore": [".agents/**"]
 }
