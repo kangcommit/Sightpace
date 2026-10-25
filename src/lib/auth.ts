@@ -1,9 +1,27 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { prisma } from '@/lib/prisma'
+import { nextCookies } from 'better-auth/next-js'
+import { authOptions } from '@/lib/auth-options'
 
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: 'postgresql',
-  }),
-})
+async function createAuth() {
+  const options = authOptions()
+  const { prisma } = await import('@/lib/prisma')
+
+  return betterAuth({
+    ...options,
+    database: prismaAdapter(prisma, { provider: 'postgresql' }),
+    plugins: [nextCookies()],
+  })
+}
+
+// Request-time initialization keeps builds independent of runtime secrets/DB.
+let instance: ReturnType<typeof createAuth> | undefined
+
+export function getAuth() {
+  instance ??= createAuth().catch((error: unknown) => {
+    instance = undefined
+    throw error
+  })
+
+  return instance
+}

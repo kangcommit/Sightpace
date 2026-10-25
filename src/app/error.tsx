@@ -20,7 +20,7 @@ export default function GlobalError({
       <p className="text-muted-foreground text-sm font-medium">Something went wrong</p>
       <h1 className="text-3xl font-semibold tracking-tight">We could not load this page.</h1>
       <p className="text-muted-foreground">
-        Try again. If the problem continues, check the server logs using the request identifier.
+        Try again. If the problem continues, come back in a few minutes.
       </p>
       <Button onClick={reset}>Try again</Button>
     </main>
