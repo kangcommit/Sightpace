@@ -4,5 +4,6 @@
     "src/components/ui/**": ["exports"],
     "src/app/**": ["exports"]
   },
+  "prisma": { "config": ["prisma7.config.ts"] },
   "ignore": [".agents/**"]
 }
