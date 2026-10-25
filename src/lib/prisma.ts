@@ -1,12 +1,9 @@
 import 'dotenv/config'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { getDatabaseEnv } from '@/lib/env'
 import { PrismaClient } from '../generated/prisma/client'
 
-const connectionString = process.env.DATABASE_URL
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL is required to initialize the database client')
-}
+const { DATABASE_URL: connectionString } = getDatabaseEnv()
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
