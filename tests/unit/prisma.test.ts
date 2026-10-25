@@ -39,29 +39,51 @@ afterEach(() => {
   } else {
     globalForPrisma.prisma = previousClient
   }
+
   vi.unstubAllEnvs()
 })
 
 describe('Prisma initialization', () => {
   it('rejects missing database configuration before constructing a client', async () => {
+    // Arrange
     vi.stubEnv('DATABASE_URL', '')
-    await expect(import('@/lib/prisma')).rejects.toThrow('DATABASE_URL: must not be blank')
+
+    // Act
+    let validationError: unknown
+    try {
+      await import('@/lib/prisma')
+    } catch (error) {
+      validationError = error
+    }
+
+    // Assert
+    expect(String(validationError)).toContain('DATABASE_URL: must not be blank')
     expect(mocks.client).not.toHaveBeenCalled()
     expect(mocks.adapter).not.toHaveBeenCalled()
   })
 
   it('reuses the development client across module reloads', async () => {
+    // Arrange
     const first = await import('@/lib/prisma')
+
+    // Act
     vi.resetModules()
     const second = await import('@/lib/prisma')
+
+    // Assert
     expect(second.prisma).toBe(first.prisma)
     expect(mocks.client).toHaveBeenCalledTimes(1)
     expect(mocks.adapter).toHaveBeenCalledTimes(1)
   })
 
   it('does not retain a production client on the development global', async () => {
+    // Arrange
     vi.stubEnv('NODE_ENV', 'production')
+
+    // Act
     await import('@/lib/prisma')
+
+    // Assert
     expect(globalForPrisma.prisma).toBeUndefined()
     expect(mocks.client).toHaveBeenCalledTimes(1)
   })
