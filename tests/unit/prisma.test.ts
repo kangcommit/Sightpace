@@ -45,9 +45,7 @@ afterEach(() => {
 describe('Prisma initialization', () => {
   it('rejects missing database configuration before constructing a client', async () => {
     vi.stubEnv('DATABASE_URL', '')
-    await expect(import('@/lib/prisma')).rejects.toThrow(
-      'DATABASE_URL is required to initialize the database client',
-    )
+    await expect(import('@/lib/prisma')).rejects.toThrow('DATABASE_URL: must not be blank')
     expect(mocks.client).not.toHaveBeenCalled()
     expect(mocks.adapter).not.toHaveBeenCalled()
   })
