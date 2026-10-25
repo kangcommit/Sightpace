@@ -57,6 +57,7 @@ export function authOptions(source: NodeJS.ProcessEnv = process.env) {
           headers: ctx.headers ?? ctx.request?.headers ?? new Headers(),
           query: { disableCookieCache: true, disableRefresh: true },
         })
+
         if (session) {
           if (callback) throw ctx.redirect('/trips')
 

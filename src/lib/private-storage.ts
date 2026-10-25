@@ -3,9 +3,11 @@ const privatePrefix = 'trailplan:private:'
 /** Never clear unrelated browser storage or the public sample draft. */
 export function clearPrivateStorage(): boolean {
   let cleared = true
+
   for (const name of ['localStorage', 'sessionStorage'] as const) {
     try {
       const storage = window[name]
+
       for (let index = storage.length - 1; index >= 0; index--) {
         const key = storage.key(index)
         if (key?.startsWith(privatePrefix)) storage.removeItem(key)
@@ -32,6 +34,7 @@ export function preparePrivateStorage(userId: string): boolean {
 
     window.localStorage.setItem(ownerKey, userId)
     window.sessionStorage.setItem(ownerKey, userId)
+
     return true
   } catch {
     return false
