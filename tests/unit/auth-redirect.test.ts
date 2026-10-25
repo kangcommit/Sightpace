@@ -6,8 +6,16 @@ const day = '22222222-2222-4222-8222-222222222222'
 
 describe('safe authentication destinations', () => {
   it.each(['/trips', '/trips/new', '/demo', trip, `${trip}?day=${day}`])('preserves %s', (path) => {
-    expect(safeReturnPath(path)).toBe(path)
+    // Arrange
+    const destination = path
+
+    // Act
+    const result = safeReturnPath(destination)
+
+    // Assert
+    expect(result).toBe(destination)
   })
+
   it.each([
     undefined,
     ['/trips'],
@@ -23,16 +31,33 @@ describe('safe authentication destinations', () => {
     'javascript:alert(1)',
     '/trips/no-id',
   ])('rejects unsafe destination %s', (path) => {
-    expect(safeReturnPath(path)).toBe('/trips')
+    // Arrange
+    const destination = path
+
+    // Act
+    const result = safeReturnPath(destination)
+
+    // Assert
+    expect(result).toBe('/trips')
   })
+
   it('strips arbitrary queries while retaining only a validated selected day', () => {
-    expect(safeReturnPath(`${trip}?day=${day}&day=${day}`)).toBe(trip)
-    expect(safeReturnPath(`${trip}?day=invalid`)).toBe(trip)
-    expect(safeReturnPath('/demo?redirect=https://evil.example')).toBe('/demo')
-    expect(
-      new URL(signInPath(`${trip}?day=${day}`, true), 'https://test.example').searchParams.get(
-        'returnTo',
-      ),
-    ).toBe(`${trip}?day=${day}`)
+    // Arrange
+    const destinations = [
+      `${trip}?day=${day}&day=${day}`,
+      `${trip}?day=invalid`,
+      '/demo?redirect=https://evil.example',
+    ]
+
+    // Act
+    const results = destinations.map(safeReturnPath)
+    const signInReturnTo = new URL(
+      signInPath(`${trip}?day=${day}`, true),
+      'https://test.example',
+    ).searchParams.get('returnTo')
+
+    // Assert
+    expect(results).toEqual([trip, trip, '/demo'])
+    expect(signInReturnTo).toBe(`${trip}?day=${day}`)
   })
 })

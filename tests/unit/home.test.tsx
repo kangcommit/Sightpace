@@ -5,8 +5,13 @@ import Page from '@/app/page'
 
 describe('home page', () => {
   it('shows the template introduction and framework documentation link', () => {
-    render(<Page />)
+    // Arrange
+    const page = <Page />
 
+    // Act
+    render(page)
+
+    // Assert
     expect(
       screen.getByRole('heading', { name: /solid foundation for your next product/i }),
     ).toBeInTheDocument()
