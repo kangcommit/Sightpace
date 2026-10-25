@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function TripsPage() {
   const user = await requireUser()
+
   if (!user.ok) redirect('/sign-in?returnTo=%2Ftrips')
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
       <Link

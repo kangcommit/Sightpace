@@ -27,6 +27,7 @@ export function safeReturnPath(value: unknown): string {
 
 export function signInPath(returnTo: unknown, failed = false): string {
   const query = new URLSearchParams({ returnTo: safeReturnPath(returnTo) })
+
   if (failed) query.set('error', 'oauth')
 
   return `/sign-in?${query}`

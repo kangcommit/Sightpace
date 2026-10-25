@@ -49,6 +49,7 @@ export function PrivateSession({
     }
 
     window.addEventListener('storage', onStorage)
+
     return () => window.removeEventListener('storage', onStorage)
   }, [userId])
 
@@ -56,6 +57,7 @@ export function PrivateSession({
     if (!data || data.user.id !== userId || logout !== 'idle' || externalChange) return
 
     const prepared = preparePrivateStorage(userId)
+
     setStorageFailed(!prepared)
     setReady(prepared)
   }, [data, userId, logout, externalChange])
@@ -69,8 +71,11 @@ export function PrivateSession({
     if (logout === 'pending') return
 
     setLogout('pending')
+
     const cleared = clearPrivateStorage()
+
     setStorageFailed(!cleared)
+
     try {
       const result = await authClient.signOut()
       if (result.error) throw new Error('Sign-out failed')
@@ -87,7 +92,9 @@ export function PrivateSession({
   function retryStorage() {
     const leaving = logout === 'complete' || externalChange
     const cleared = leaving ? clearPrivateStorage() : preparePrivateStorage(userId)
+
     setStorageFailed(!cleared)
+
     if (!cleared) return
 
     if (leaving) window.location.replace(logout === 'complete' ? '/sign-in' : '/trips')

@@ -28,6 +28,7 @@ export function GoogleSignIn({ returnTo, failed }: { returnTo: string; failed: b
         callbackURL: safeReturnPath(returnTo),
         errorCallbackURL: signInPath(returnTo, true),
       })
+
       if (result.error?.code === 'SIGN_OUT_REQUIRED') {
         setSignOutRequired(true)
         setPending(false)

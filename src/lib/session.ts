@@ -10,6 +10,7 @@ export async function requireUser() {
       headers: await headers(),
       query: { disableCookieCache: true, disableRefresh: true },
     })
+
     if (!session || session.session.expiresAt <= new Date()) {
       return {
         ok: false,
@@ -20,6 +21,7 @@ export async function requireUser() {
     return { ok: true, data: { id: session.user.id } } as const
   } catch {
     const requestId = randomUUID()
+
     console.error('Session verification unavailable', { requestId })
     throw new Error(`Session verification unavailable. Reference: ${requestId}`)
   }

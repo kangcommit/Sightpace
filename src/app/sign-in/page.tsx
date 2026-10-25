@@ -15,8 +15,10 @@ export default async function SignInPage({
 }) {
   const params = await searchParams
   const returnTo = safeReturnPath(params.returnTo)
+
   // Keep provider failures recoverable even when runtime configuration/DB is unavailable.
   const user = await requireUser().catch(() => null)
+
   if (user?.ok) redirect(returnTo)
 
   return (

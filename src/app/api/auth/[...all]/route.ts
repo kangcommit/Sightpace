@@ -10,9 +10,11 @@ async function handle(request: Request) {
   try {
     const handlers = toNextJsHandler(await getAuth())
     response = await handlers[request.method === 'GET' ? 'GET' : 'POST'](request)
+
     if (response.status >= 500) throw new Error('Authentication unavailable')
   } catch {
     const requestId = randomUUID()
+
     console.error('Authentication unavailable', { requestId })
     response = Response.json(
       {
