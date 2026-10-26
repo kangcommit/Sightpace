@@ -4,7 +4,7 @@ import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, expect, inject, it } from 'vitest'
 import { getTrip, listTrips } from '@/features/trips/server/queries'
 import { PrismaClient } from '@/generated/prisma/client'
-import { createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
+import { createSampleCopy, createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
 
 const url = inject('databaseUrl')
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }), log: [] })
@@ -834,4 +834,69 @@ it('rejects stale delete and replays acknowledged delete after cascading removal
   expect(remainingDays).toBe(0)
   expect(receiptCount).toBe(2)
   expect(foreignDelete).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+})
+
+it('creates an owner-scoped sample copy and replays the same creation receipt', async () => {
+  // Arrange
+  const mutationId = randomUUID()
+  const sample = {
+    mutationId,
+    title: 'A day in Porto',
+    destination: 'Porto, Portugal',
+    days: [
+      {
+        key: 'sample-day',
+        date: '2026-10-27',
+        startMinute: 540,
+        finishMinute: 1080,
+        activities: [
+          {
+            key: 'breakfast',
+            title: 'Breakfast',
+            placeLabel: 'Café',
+            durationMinutes: 45,
+            fixedStartMinute: null,
+          },
+          {
+            key: 'lunch',
+            title: 'Lunch',
+            placeLabel: 'Riverside',
+            durationMinutes: 45,
+            fixedStartMinute: 720,
+          },
+        ],
+        travelEstimates: [{ fromKey: 'breakfast', toKey: 'lunch', minutes: 20 }],
+      },
+    ],
+  }
+
+  // Act
+  const created = await createSampleCopy(db, ownerA, sample)
+  const replayed = await createSampleCopy(db, ownerA, sample)
+  const changedReplay = await createSampleCopy(db, ownerA, { ...sample, title: 'Changed payload' })
+  const stored = created.ok ? await getTrip(ownerA, created.data.tripId, db) : null
+  const foreign = created.ok ? await getTrip(ownerB, created.data.tripId, db) : null
+  const receipts = created.ok
+    ? await db.mutationReceipt.count({ where: { targetTripId: created.data.tripId } })
+    : 0
+
+  // Assert
+  expect(created).toMatchObject({ ok: true, data: { revision: 1 } })
+  expect(replayed).toEqual(created)
+  expect(changedReplay).toMatchObject({ ok: false, error: { code: 'IDEMPOTENCY_CONFLICT' } })
+  expect(stored).toMatchObject({
+    ok: true,
+    data: {
+      title: 'A day in Porto',
+      destination: 'Porto, Portugal',
+      days: [
+        {
+          activities: [{ title: 'Breakfast' }, { title: 'Lunch', fixedStartMinute: 720 }],
+          travelEstimates: [{ minutes: 20 }],
+        },
+      ],
+    },
+  })
+  expect(foreign).toEqual({ ok: true, data: null })
+  expect(receipts).toBe(1)
 })

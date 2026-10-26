@@ -78,6 +78,22 @@ it('reveals a clearly labeled new-day form on demand', () => {
   expect(screen.getByLabelText('New day date')).toBeVisible()
 })
 
+it('keeps sample edits local without invoking private autosave', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  render(<TripEditor trip={trip} sampleMode />)
+
+  // Act
+  fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Edited sample' } })
+  await act(async () => {
+    vi.advanceTimersByTime(1000)
+  })
+
+  // Assert
+  expect(mocks.save).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Trip name')).toHaveValue('Edited sample')
+})
+
 it('preserves new-day values when the form is hidden and shown again', () => {
   // Arrange
   render(<TripEditor trip={trip} />)
