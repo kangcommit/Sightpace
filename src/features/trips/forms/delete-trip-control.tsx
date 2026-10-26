@@ -83,11 +83,10 @@ export function DeleteTripButton({
   return (
     <>
       <Button
-        type="button"
-        variant="ghost"
+        variant="destructive"
         size="icon"
         aria-label={`Delete ${title}`}
-        className="text-destructive hover:text-destructive min-h-11 min-w-11"
+        className="min-h-11 min-w-11"
         onClick={handleOpenConfirmation}
       >
         <Trash2 aria-hidden="true" />
