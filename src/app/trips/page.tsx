@@ -13,8 +13,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { DeleteTripButton } from '@/features/trips/delete-trip-control'
-import { listTrips } from '@/features/trips/queries'
+import { DeleteTripButton } from '@/features/trips/forms/delete-trip-control'
+import { listTrips } from '@/features/trips/server/queries'
 import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'

@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it } from 'vitest'
-import type { CreateTripState } from '@/features/trips/actions'
-import { CreateTripForm } from '@/features/trips/create-trip-form'
-import { DeleteTripButton } from '@/features/trips/delete-trip-control'
+import { CreateTripForm } from '@/features/trips/forms/create-trip-form'
+import { DeleteTripButton } from '@/features/trips/forms/delete-trip-control'
+import type { CreateTripState } from '@/features/trips/server/actions'
 
 afterEach(cleanup)
 

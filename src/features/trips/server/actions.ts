@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 import { createTrip, deleteTrip } from '@/lib/trip-transactions'
-import { isFirstDayDateAllowed } from './date-rules'
+import { isDateTodayOrLater } from '../shared/date-rules'
 
 const uuid = z.uuid()
 const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/
@@ -37,7 +37,7 @@ const createFields = z
       .max(120, 'Use 120 characters or fewer.'),
     date: z.iso
       .date('Enter a valid first day.')
-      .refine((date) => isFirstDayDateAllowed(date), 'Choose today or a future date.'),
+      .refine((date) => isDateTodayOrLater(date), 'Choose today or a future date.'),
     startTime,
     finishTime,
   })

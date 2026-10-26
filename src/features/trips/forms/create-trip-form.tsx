@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type { ChangeEvent } from 'react'
 import { useActionState, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { Input } from '@/components/ui/input'
 import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
-import { type CreateTripState, createTripAction } from './actions'
+import { type CreateTripState, createTripAction } from '../server/actions'
 
 export function CreateTripForm({
   initialState,
@@ -21,6 +22,18 @@ export function CreateTripForm({
   const [dateValue, setDateValue] = useState(initialState.values.date)
   const [startTimeValue, setStartTimeValue] = useState(initialState.values.startTime)
   const [finishTimeValue, setFinishTimeValue] = useState(initialState.values.finishTime)
+
+  function handleDateChange(event: ChangeEvent<HTMLInputElement>) {
+    setDateValue(event.target.value)
+  }
+
+  function handleStartTimeChange(event: ChangeEvent<HTMLInputElement>) {
+    setStartTimeValue(event.target.value)
+  }
+
+  function handleFinishTimeChange(event: ChangeEvent<HTMLInputElement>) {
+    setFinishTimeValue(event.target.value)
+  }
 
   return (
     <form action={action} className="flex flex-col gap-5">
@@ -80,7 +93,7 @@ export function CreateTripForm({
             required
             min={minimumDate}
             value={dateValue}
-            onChange={(event) => setDateValue(event.target.value)}
+            onChange={handleDateChange}
             className="block!"
             aria-invalid={Boolean(state.errors.date) || undefined}
             aria-describedby={
@@ -101,7 +114,7 @@ export function CreateTripForm({
             max="23:58"
             step={60}
             value={startTimeValue}
-            onChange={(event) => setStartTimeValue(event.target.value)}
+            onChange={handleStartTimeChange}
             className="block!"
             aria-invalid={Boolean(state.errors.startTime) || undefined}
             aria-describedby={state.errors.startTime ? 'trip-startTime-error' : undefined}
@@ -121,7 +134,7 @@ export function CreateTripForm({
             max="23:59"
             step={60}
             value={finishTimeValue}
-            onChange={(event) => setFinishTimeValue(event.target.value)}
+            onChange={handleFinishTimeChange}
             className="block!"
             aria-invalid={Boolean(state.errors.finishTime) || undefined}
             aria-describedby={state.errors.finishTime ? 'trip-finishTime-error' : undefined}
