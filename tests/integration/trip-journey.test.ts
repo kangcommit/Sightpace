@@ -347,13 +347,39 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
   // Act
   await page.goto('/demo')
   await page.getByRole('button', { name: 'Reset sample' }).waitFor()
+  await page.setViewportSize({ width: 1280, height: 800 })
+  const desktopViewsVisible = {
+    list: await page.getByRole('tabpanel', { name: 'List' }).isVisible(),
+    timeline: await page.getByRole('tabpanel', { name: 'Timeline' }).isVisible(),
+  }
+  await page.setViewportSize({ width: 768, height: 800 })
+  const compactViewsVisible = {
+    list: await page.getByRole('tabpanel', { name: 'List' }).isVisible(),
+    timeline: await page.getByRole('tabpanel', { name: 'Timeline' }).isVisible(),
+  }
   await page.setViewportSize({ width: 360, height: 800 })
   const sampleMobileWidth = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,
   }))
+  const listTab = page.getByRole('tab', { name: 'List' })
+  const timelineTab = page.getByRole('tab', { name: 'Timeline' })
+  await listTab.focus()
+  await page.keyboard.press('ArrowRight')
+  const keyboardSelectedTimeline = await timelineTab.getAttribute('aria-selected')
+  const mobileTimelineVisible = await page.getByRole('tabpanel', { name: 'Timeline' }).isVisible()
+  const mobileListHidden = !(await page.getByRole('tabpanel', { name: 'List' }).isVisible())
+  await page
+    .getByRole('tabpanel', { name: 'Timeline' })
+    .getByRole('button', { name: /Edit Lunch.*booked 12:00/ })
+    .click()
+  const timelineEditValue = await page.getByRole('dialog').getByLabel('Name').inputValue()
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
+  await listTab.click()
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.getByText('Booked 12:00 · projected arrival 12:05 · 5 min late').waitFor()
+  await page
+    .getByText('Booked 12:00 · projected arrival 12:05 · 5 min late', { exact: true })
+    .waitFor()
   await page.getByLabel('Trip name').fill('Temporary sample change')
   await page.getByRole('button', { name: 'Reset sample' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Reset sample' }).click()
@@ -402,7 +428,13 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
   expect(signInBackHref).toBe('/demo')
   expect(stored.title).toBe(title)
   expect(sampleTripCountBeforeCopy).toBe(0)
+  expect(desktopViewsVisible).toEqual({ list: true, timeline: true })
+  expect(compactViewsVisible).toEqual({ list: true, timeline: true })
   expect(sampleMobileWidth.content).toBeLessThanOrEqual(sampleMobileWidth.viewport)
+  expect(keyboardSelectedTimeline).toBe('true')
+  expect(mobileTimelineVisible).toBe(true)
+  expect(mobileListHidden).toBe(true)
+  expect(timelineEditValue).toBe('Lunch')
   expect(stored.destination).toBe('Porto, Portugal')
   expect(stored.days[0]?.activities).toHaveLength(6)
   expect(

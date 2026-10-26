@@ -123,7 +123,7 @@ it('recalculates missing-travel projections and provisional timing immediately',
   expect(within(lunch).queryByText(/Booked/)).not.toBeInTheDocument()
   expect(screen.getByText(/travel estimate not set/i)).toBeVisible()
   expect(screen.getByText('Provisional: earlier travel time is missing.')).toBeVisible()
-  expect(screen.getByText(/Projected finish/)).toHaveTextContent('12:45')
+  expect(screen.getByLabelText('Day schedule summary')).toHaveTextContent('12:45')
 })
 
 it('shows a late booking separately from projected attendance', () => {
@@ -188,7 +188,7 @@ it('formats activity times after midnight as next-day clock times without a dupl
   // Assert
   expect(cycling).toHaveTextContent('22:24–01:44 (next day)')
   expect(within(cycling).queryByText(/Booked/)).not.toBeInTheDocument()
-  expect(screen.getByText(/Projected finish/)).toHaveTextContent('01:44 (next day)')
+  expect(screen.getByLabelText('Day schedule summary')).toHaveTextContent('01:44 (next day)')
 })
 
 it('moves an activity by keyboard-accessible controls, follows focus, and announces position', async () => {
