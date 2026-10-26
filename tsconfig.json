@@ -50,7 +50,9 @@
     // Application and tool source files.
     "**/*.ts",
     "**/*.tsx",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-integration/types/**/*.ts",
+    ".next-integration/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

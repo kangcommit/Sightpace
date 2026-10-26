@@ -39,14 +39,14 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm db:validate
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Verify migrations and storage with disposable PostgreSQL
         run: pnpm test:integration
 
       - name: Run static checks and build
         run: pnpm run verify
-
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run end-to-end tests
         run: pnpm test:e2e
