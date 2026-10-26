@@ -105,7 +105,34 @@ const snapshot = z
     }
   })
 
-const createInput = snapshot.safeExtend({ mutationId: uuid, tripId: uuid })
+const createInput = z
+  .strictObject({
+    mutationId: uuid,
+    title: label(120),
+    destination: label(120),
+    days: z
+      .array(
+        z
+          .strictObject({
+            date,
+            startMinute: minute(0, 1438),
+            finishMinute: minute(1, 1439),
+          })
+          .refine((value) => value.startMinute < value.finishMinute),
+      )
+      .min(1)
+      .max(30),
+  })
+  .superRefine((value, context) => {
+    const dates = new Set<string>()
+
+    for (const [dayIndex, current] of value.days.entries()) {
+      if (dates.has(current.date))
+        context.addIssue({ code: 'custom', path: ['days', dayIndex], message: 'Invalid day.' })
+
+      dates.add(current.date)
+    }
+  })
 
 const saveInput = z.strictObject({
   mutationId: uuid,
@@ -128,7 +155,6 @@ type Code =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'IDEMPOTENCY_CONFLICT'
-  | 'LIMIT_EXCEEDED'
   | 'TEMPORARILY_UNAVAILABLE'
 
 type Result<T> =
@@ -183,7 +209,6 @@ async function run<T>(work: () => Promise<T>): Promise<Result<T>> {
         NOT_FOUND: 'Trip not found.',
         CONFLICT: 'This trip changed. Reload it before saving.',
         IDEMPOTENCY_CONFLICT: 'This request was already used for another change.',
-        LIMIT_EXCEEDED: 'Trip limit reached.',
         TEMPORARILY_UNAVAILABLE: 'Saving is unavailable. Please try again.',
       }
 
@@ -239,6 +264,24 @@ async function replay(
   ) {
     throw new StorageFailure('IDEMPOTENCY_CONFLICT')
   }
+
+  return receipt
+}
+
+async function replayCreation(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  mutationId: string,
+  payloadHash: string,
+) {
+  const receipt = await tx.mutationReceipt.findUnique({
+    where: { userId_mutationId: { userId: ownerId, mutationId } },
+  })
+
+  if (!receipt) return null
+
+  if (receipt.operation !== 'CREATE_TRIP' || receipt.payloadHash !== payloadHash)
+    throw new StorageFailure('IDEMPOTENCY_CONFLICT')
 
   return receipt
 }
@@ -300,74 +343,47 @@ async function assertOwnedIds(tx: Prisma.TransactionClient, tripId: string, valu
     return invalid()
 }
 
-async function assertUnclaimedIds(tx: Prisma.TransactionClient, value: Snapshot) {
-  const dayIds = value.days.map((item) => item.id)
-  const activityIds = value.days.flatMap((item) => item.activities.map((activity) => activity.id))
-
-  const [days, activities] = await Promise.all([
-    tx.day.count({ where: { id: { in: dayIds } } }),
-    tx.activity.count({ where: { id: { in: activityIds } } }),
-  ])
-
-  if (days || activities) return invalid()
-}
-
 /** Internal storage boundary. Callers must supply a server-verified user ID; never expose this as a client action. */
 export function createTrip(db: PrismaClient, ownerId: string, input: unknown) {
   return run(async () => {
     const value = parse(createInput, input)
-
-    if (!value.days.length) return invalid()
-
     const payloadHash = digest('CREATE_TRIP', value)
 
     return db.$transaction(async (tx) => {
       await lockOwner(tx, ownerId)
 
-      const prior = await replay(
-        tx,
-        ownerId,
-        value.mutationId,
-        'CREATE_TRIP',
-        value.tripId,
-        payloadHash,
-      )
+      const prior = await replayCreation(tx, ownerId, value.mutationId, payloadHash)
 
       if (prior) return { tripId: prior.targetTripId, revision: prior.resultRevision as number }
 
-      if ((await tx.trip.count({ where: { userId: ownerId } })) >= 50)
-        throw new StorageFailure('LIMIT_EXCEEDED')
-
-      const existing = await tx.trip.findUnique({
-        where: { id: value.tripId },
-        select: { id: true },
-      })
-
-      if (existing) throw new StorageFailure('CONFLICT')
-
-      await assertUnclaimedIds(tx, value)
-      await tx.trip.create({
+      const trip = await tx.trip.create({
         data: {
-          id: value.tripId,
           userId: ownerId,
           title: value.title,
           destination: value.destination,
+          days: {
+            create: value.days.map((current) => ({
+              date: new Date(`${current.date}T00:00:00.000Z`),
+              startMinute: current.startMinute,
+              finishMinute: current.finishMinute,
+            })),
+          },
         },
+        select: { id: true },
       })
-      await writeDays(tx, value.tripId, value)
       await tx.mutationReceipt.create({
         data: {
           userId: ownerId,
           mutationId: value.mutationId,
           operation: 'CREATE_TRIP',
-          targetTripId: value.tripId,
+          targetTripId: trip.id,
           payloadHash,
           resultKind: 'CREATED',
           resultRevision: 1,
         },
       })
 
-      return { tripId: value.tripId, revision: 1 }
+      return { tripId: trip.id, revision: 1 }
     })
   })
 }
