@@ -38,7 +38,6 @@ for (const width of [360, 1280]) {
       const response = page.waitForResponse('**/api/auth/sign-in/social')
       await page.keyboard.press('Enter')
       await response
-      const retryAlertVisible = await page.getByRole('main').getByRole('alert').isVisible()
       const retryButtonEnabled = await button.isEnabled()
       const noHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -56,7 +55,7 @@ for (const width of [360, 1280]) {
       expect(providerMessageCount).toBe(0)
       expect(logoFocused).toBe(true)
       expect(buttonFocused).toBe(true)
-      expect(retryAlertVisible).toBe(true)
+      await expect(page.getByRole('main').getByRole('alert')).toBeVisible()
       expect(retryButtonEnabled).toBe(true)
       expect(noHorizontalOverflow).toBe(true)
       expect(buttonHeight).toBeGreaterThanOrEqual(44)
@@ -76,6 +75,29 @@ test('private direct entry and forged cookies require sign-in', async ({ page, c
   // Assert
   await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Ftrips/)
   await expect(page.getByRole('heading', { name: 'My trips' })).toHaveCount(0)
+})
+
+test('trip creation and detail direct links require sign-in before showing private UI', async ({
+  page,
+}) => {
+  // Arrange
+  const tripId = '20000000-0000-4000-8000-000000000001'
+  const privatePaths = ['/trips/new', `/trips/${tripId}`]
+
+  // Act
+  const destinations: { href: string; returnTo: string | null }[] = []
+  for (const path of privatePaths) {
+    await page.goto(path)
+    await expect(page).toHaveURL(/\/sign-in/)
+    const url = new URL(page.url())
+    destinations.push({ href: url.href, returnTo: url.searchParams.get('returnTo') })
+  }
+  const privateContentCount = await page.getByRole('heading', { name: 'Create a trip' }).count()
+
+  // Assert
+  expect(destinations).toMatchObject(privatePaths.map((returnTo) => ({ returnTo })))
+  expect(privateContentCount).toBe(0)
+  await expect(page.getByRole('heading', { name: 'Save your trips across devices' })).toBeVisible()
 })
 
 test('auth session endpoint is private/no-store and cross-origin mutations are refused', async ({

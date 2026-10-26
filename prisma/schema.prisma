@@ -80,7 +80,7 @@ model Verification {
 
 // SQL CHECK constraints live in the domain migration; preserve them in future migrations.
 model Trip {
-  id          String   @id @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
@@ -95,7 +95,7 @@ model Trip {
 }
 
 model Day {
-  id              String           @id @db.Uuid
+  id              String           @id @default(uuid()) @db.Uuid
   tripId          String           @db.Uuid
   trip            Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
   date            DateTime         @db.Date
@@ -109,7 +109,7 @@ model Day {
 }
 
 model Activity {
-  id               String           @id @db.Uuid
+  id               String           @id @default(uuid()) @db.Uuid
   dayId            String           @db.Uuid
   day              Day              @relation(fields: [dayId], references: [id], onDelete: Cascade)
   title            String

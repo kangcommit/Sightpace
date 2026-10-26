@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, expect, inject, it } from 'vitest'
+import { getTrip, listTrips } from '@/features/trips/queries'
 import { PrismaClient } from '@/generated/prisma/client'
 import { createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
 
@@ -85,6 +86,128 @@ function captureError<T>(operation: Promise<T>) {
     (error: unknown) => error,
   )
 }
+
+it('lists and reads only the verified owner’s trip snapshot', async () => {
+  // Arrange
+  const foreignTrip = randomUUID()
+  await db.trip.create({
+    data: { id: foreignTrip, userId: ownerB, title: 'Private B', destination: 'Other city' },
+  })
+
+  // Act
+  const ownerList = await listTrips(ownerA, undefined, db)
+  const foreignList = await listTrips(ownerB, undefined, db)
+  const ownedRead = await getTrip(ownerA, tripId, db)
+  const foreignRead = await getTrip(ownerA, foreignTrip, db)
+  const missingRead = await getTrip(ownerA, randomUUID(), db)
+
+  // Assert
+  expect(ownerList).toMatchObject({
+    ok: true,
+    data: { items: [{ id: tripId }], page: 1, pageSize: 20, totalPages: 1 },
+  })
+  expect(foreignList).toMatchObject({
+    ok: true,
+    data: {
+      items: [{ id: foreignTrip, startDate: null, endDate: null }],
+      page: 1,
+      pageSize: 20,
+      totalPages: 1,
+    },
+  })
+  expect(ownedRead).toMatchObject({
+    ok: true,
+    data: {
+      id: tripId,
+      revision: 1,
+      days: [
+        {
+          date: '2026-10-25',
+          startMinute: 540,
+          finishMinute: 1080,
+          activities: [{ id: firstId }, { id: secondId }],
+        },
+      ],
+    },
+  })
+  expect(foreignRead).toEqual({ ok: true, data: null })
+  expect(missingRead).toEqual({ ok: true, data: null })
+})
+
+it('generates activity IDs from the Prisma schema default', async () => {
+  // Arrange
+  const expectedId = expect.stringMatching(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  )
+
+  // Act
+  const activity = await db.activity.create({
+    data: { dayId, title: 'New stop', durationMinutes: 30, position: 2 },
+    select: { id: true },
+  })
+
+  // Assert
+  expect(activity.id).toEqual(expectedId)
+})
+
+it('creates trips when an owner already has more than fifty', async () => {
+  // Arrange
+  await db.trip.createMany({
+    data: Array.from({ length: 50 }, (_, index) => ({
+      id: randomUUID(),
+      userId: ownerA,
+      title: `Existing trip ${index}`,
+      destination: 'Example city',
+    })),
+  })
+  const input = {
+    mutationId: randomUUID(),
+    title: 'Additional trip',
+    destination: 'Example city',
+    days: [{ date: '2026-10-26', startMinute: 540, finishMinute: 1080 }],
+  }
+
+  // Act
+  const created = await createTrip(db, ownerA, input)
+  const tripCount = await db.trip.count({ where: { userId: ownerA } })
+
+  // Assert
+  expect(created).toMatchObject({ ok: true, data: { revision: 1 } })
+  expect(tripCount).toBe(52)
+})
+
+it('paginates the owner’s list with validated page numbers', async () => {
+  // Arrange
+  await db.trip.createMany({
+    data: Array.from({ length: 20 }, (_, index) => ({
+      id: randomUUID(),
+      userId: ownerA,
+      title: `Extra trip ${index}`,
+      destination: 'Example city',
+    })),
+  })
+
+  // Act
+  const first = await listTrips(ownerA, undefined, db)
+  const second = await listTrips(ownerA, '2', db)
+  const malformed = await listTrips(ownerA, 'not-a-page', db)
+  const outOfRange = await listTrips(ownerA, '99', db)
+
+  // Assert
+  expect(first).toMatchObject({
+    ok: true,
+    data: { items: expect.any(Array), page: 1, pageSize: 20, totalPages: 2 },
+  })
+  expect(first.ok && first.data.items).toHaveLength(20)
+  expect(second).toMatchObject({ ok: true, data: { items: expect.any(Array), page: 2 } })
+  expect(second.ok && second.data.items).toHaveLength(1)
+  expect(malformed).toEqual({ ok: false, error: 'VALIDATION_ERROR' })
+  expect(outOfRange).toMatchObject({ ok: true, data: { page: 2, totalPages: 2 } })
+  if (first.ok && second.ok)
+    expect(new Set([...first.data.items, ...second.data.items].map((trip) => trip.id)).size).toBe(
+      21,
+    )
+})
 
 it('round-trips date-only input, defaults, nullable booking/place and UTC audit instants', async () => {
   // Arrange
@@ -528,31 +651,50 @@ function snapshot() {
 
 it('creates once and replays the original acknowledgement without duplicate rows', async () => {
   // Arrange
-  const input = { mutationId: randomUUID(), tripId: randomUUID(), ...snapshot() }
-  input.days[0].id = randomUUID()
-  input.days[0].activities[0].id = randomUUID()
-  input.days[0].activities[1].id = randomUUID()
-  input.days[0].travelEstimates[0].fromActivityId = input.days[0].activities[0].id
-  input.days[0].travelEstimates[0].toActivityId = input.days[0].activities[1].id
+  const input = {
+    mutationId: randomUUID(),
+    title: 'New synthetic trip',
+    destination: 'Example city',
+    days: [{ date: '2026-10-26', startMinute: 540, finishMinute: 1080 }],
+  }
 
   // Act
   const first = await createTrip(db, ownerA, input)
   const replay = await createTrip(db, ownerA, input)
-  const tripCount = await db.trip.count({ where: { id: input.tripId } })
-  const receiptCount = await db.mutationReceipt.count({ where: { targetTripId: input.tripId } })
+  const createdTripId = first.ok ? first.data.tripId : ''
+  const createdDayIds = await db.day.findMany({
+    where: { tripId: createdTripId },
+    select: { id: true },
+  })
+  const tripCount = await db.trip.count({ where: { id: createdTripId } })
+  const receiptCount = await db.mutationReceipt.count({ where: { targetTripId: createdTripId } })
   const changedReplay = await createTrip(db, ownerA, { ...input, destination: 'Changed' })
-  const forged = { ...input, mutationId: randomUUID(), tripId: randomUUID() }
-  const forgedResult = await createTrip(db, ownerA, forged)
-  const forgedTripCount = await db.trip.count({ where: { id: forged.tripId } })
+  const forgedTripId = randomUUID()
+  const forgedResult = await createTrip(db, ownerA, { ...input, tripId: forgedTripId })
+  const forgedTrip = await db.trip.findUnique({ where: { id: forgedTripId }, select: { id: true } })
+  const forgedDayId = randomUUID()
+  const forgedDayResult = await createTrip(db, ownerA, {
+    ...input,
+    mutationId: randomUUID(),
+    days: input.days.map((current) => ({ ...current, id: forgedDayId })),
+  })
+  const forgedDay = await db.day.findUnique({ where: { id: forgedDayId }, select: { id: true } })
 
   // Assert
-  expect(first).toEqual({ ok: true, data: { tripId: input.tripId, revision: 1 } })
+  expect(first).toMatchObject({
+    ok: true,
+    data: { tripId: expect.stringMatching(/^[0-9a-f-]{36}$/i), revision: 1 },
+  })
   expect(replay).toEqual(first)
+  expect(createdDayIds).toHaveLength(1)
+  expect(createdDayIds[0].id).toMatch(/^[0-9a-f-]{36}$/i)
   expect(tripCount).toBe(1)
   expect(receiptCount).toBe(1)
   expect(changedReplay).toMatchObject({ ok: false, error: { code: 'IDEMPOTENCY_CONFLICT' } })
   expect(forgedResult).toMatchObject({ ok: false, error: { code: 'VALIDATION_ERROR' } })
-  expect(forgedTripCount).toBe(0)
+  expect(forgedTrip).toBeNull()
+  expect(forgedDayResult).toMatchObject({ ok: false, error: { code: 'VALIDATION_ERROR' } })
+  expect(forgedDay).toBeNull()
 })
 
 it('allows one revision winner and recovers a lost response with the same receipt', async () => {
