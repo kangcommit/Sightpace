@@ -18,6 +18,7 @@
 # Next.js build output.
 /.next/
 /.next-e2e/
+/.next-integration/
 /out/
 
 # Environment files (commit the example only).
