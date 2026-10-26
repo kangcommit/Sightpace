@@ -66,7 +66,7 @@ it('requires a verified session before calling the owner-scoped storage boundary
   expect(mocks.saveTrip).not.toHaveBeenCalled()
 })
 
-it('generates entity IDs on the server and maps local directional travel keys for the verified owner', async () => {
+it('generates stable server IDs for retries and maps local directional travel keys for the verified owner', async () => {
   // Arrange
   mocks.requireUser.mockResolvedValue({ ok: true, data: { id: 'verified-owner' } })
   mocks.saveTrip.mockResolvedValue({ ok: true, data: { tripId: request.tripId, revision: 5 } })
@@ -75,6 +75,8 @@ it('generates entity IDs on the server and maps local directional travel keys fo
   const result = await saveTripEditorAction(request)
   const call = mocks.saveTrip.mock.calls[0]
   const savedSnapshot = call[2].snapshot
+  const retryResult = await saveTripEditorAction(request)
+  const retrySnapshot = mocks.saveTrip.mock.calls[1][2].snapshot
 
   // Assert
   expect(call[1]).toBe('verified-owner')
@@ -86,6 +88,12 @@ it('generates entity IDs on the server and maps local directional travel keys fo
     minutes: 0,
   })
   expect(savedSnapshot.days[0].activities[0].placeLabel).toBeNull()
+  expect(retrySnapshot).toEqual(savedSnapshot)
+  expect(retryResult).toMatchObject({
+    ok: true,
+    revision: 5,
+    ids: { 'local-day-1': savedSnapshot.days[0].id },
+  })
   expect(result).toMatchObject({
     ok: true,
     revision: 5,
