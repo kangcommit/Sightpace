@@ -107,19 +107,37 @@ describe('Google sign-in', () => {
 })
 
 describe('private browser data and sign-out', () => {
-  it('shows signing-out progress without a retry action before a failure', async () => {
+  it('does not append a sign-out button to private page content', async () => {
     // Arrange
-    mocks.signOut.mockImplementationOnce(() => new Promise(() => {}))
     render(
       <PrivateSession userId="a">
         <p>Private itinerary</p>
       </PrivateSession>,
     )
 
+    // Act
     await screen.findByText('Private itinerary')
 
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument()
+  })
+
+  it('shows signing-out progress without a retry action before a failure', async () => {
+    // Arrange
+    mocks.signOut.mockImplementationOnce(() => new Promise(() => {}))
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    render(
+      <PrivateSession userId="a">
+        <p>Private itinerary</p>
+      </PrivateSession>,
+    )
+
+    await screen.findByRole('heading', { name: 'We couldn’t open your trips' })
+
     // Act
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out on this device' }))
 
     // Assert
     expect(screen.getByRole('status')).toHaveTextContent('Signing out…')
@@ -129,21 +147,24 @@ describe('private browser data and sign-out', () => {
 
   it('acknowledges server sign-out even when saved-edit cleanup fails', async () => {
     // Arrange
+    preparePrivateStorage('a')
+    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
     mocks.signOut.mockResolvedValueOnce({ error: null })
+    mocks.useSession.mockReturnValue({ data: null, isPending: false, error: null })
     render(
       <PrivateSession userId="a">
         <p>Private itinerary</p>
       </PrivateSession>,
     )
 
-    await screen.findByText('Private itinerary')
+    expect(screen.getByRole('heading', { name: 'Sign in to continue' })).toBeVisible()
 
     const blocked = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
       throw new Error('blocked')
     })
 
     // Act
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out on this device' }))
 
     // Assert
     expect(await screen.findByRole('heading', { name: 'You’re signed out' })).toBeVisible()
@@ -285,6 +306,7 @@ describe('private browser data and sign-out', () => {
     preparePrivateStorage('a')
     localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
     mocks.signOut.mockRejectedValueOnce(new Error('offline'))
+    mocks.useSession.mockReturnValue({ data: null, isPending: false, error: null })
 
     render(
       <PrivateSession userId="a">
@@ -292,10 +314,10 @@ describe('private browser data and sign-out', () => {
       </PrivateSession>,
     )
 
-    expect(await screen.findByText('Private itinerary')).toBeVisible()
+    expect(screen.queryByText('Private itinerary')).not.toBeInTheDocument()
 
     // Act
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out on this device' }))
 
     // Assert
     expect(screen.queryByText('Private itinerary')).not.toBeInTheDocument()

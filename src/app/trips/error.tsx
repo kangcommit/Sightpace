@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { appRoutes } from '@/lib/routes'
 
 export default function TripsError({ reset }: { reset: () => void }) {
   return (
@@ -16,7 +17,7 @@ export default function TripsError({ reset }: { reset: () => void }) {
       <Button className="min-h-11 self-start" onClick={reset}>
         Try again
       </Button>
-      <Link href="/sign-in" className="flex min-h-11 items-center">
+      <Link href={appRoutes.signIn} className="flex min-h-11 items-center">
         Back to sign in
       </Link>
     </main>

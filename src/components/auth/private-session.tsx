@@ -7,7 +7,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
+import { signInPath } from '@/lib/auth-redirect'
 import { clearPrivateStorage, preparePrivateStorage } from '@/lib/private-storage'
+import { appRoutes } from '@/lib/routes'
 
 function PrivateSessionLoading() {
   return (
@@ -44,7 +46,7 @@ export function PrivateSession({
         event.newValue !== userId
       ) {
         setExternalChange(true)
-        window.location.replace('/trips')
+        window.location.replace(appRoutes.trips)
       }
     }
 
@@ -83,7 +85,7 @@ export function PrivateSession({
       setLogout('complete')
       if (!cleared) return
 
-      window.location.replace('/sign-in')
+      window.location.replace(appRoutes.signIn)
     } catch {
       setLogout('failed')
     }
@@ -97,7 +99,7 @@ export function PrivateSession({
 
     if (!cleared) return
 
-    if (leaving) window.location.replace(logout === 'complete' ? '/sign-in' : '/trips')
+    if (leaving) window.location.replace(logout === 'complete' ? appRoutes.signIn : appRoutes.trips)
     else setReady(true)
   }
 
@@ -183,7 +185,7 @@ export function PrivateSession({
         <Button className="min-h-11" onClick={retrySession} disabled={retrying}>
           {retrying ? 'Trying again…' : 'Try again'}
         </Button>
-        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center">
+        <Link href={signInPath(appRoutes.trips)} className="flex min-h-11 items-center">
           Sign in again
         </Link>
       </section>
@@ -196,7 +198,7 @@ export function PrivateSession({
           Sign in to continue
         </h1>
         <p>Use the same Google account to return to your trips.</p>
-        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center">
+        <Link href={signInPath(appRoutes.trips)} className="flex min-h-11 items-center">
           Sign in again
         </Link>
         <Button className="min-h-11" variant="outline" onClick={signOut}>
@@ -207,16 +209,5 @@ export function PrivateSession({
 
   if (!ready) return <PrivateSessionLoading />
 
-  return (
-    <div className="flex flex-col gap-6">
-      {children}
-      <Button
-        className="min-h-11 self-start motion-reduce:transition-none"
-        variant="outline"
-        onClick={signOut}
-      >
-        Sign out
-      </Button>
-    </div>
-  )
+  return <>{children}</>
 }

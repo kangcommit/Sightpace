@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { GoogleSignIn } from '@/components/auth/google-sign-in'
 import { safeReturnPath } from '@/lib/auth-redirect'
+import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Sign in | TrailPlan' }
@@ -23,7 +24,7 @@ export default async function SignInPage({
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-6 px-4 py-12 sm:px-6">
-      <Link href="/" className="flex min-h-11 items-center font-semibold">
+      <Link href={appRoutes.home} className="flex min-h-11 items-center font-semibold">
         TrailPlan
       </Link>
       <h1 className="text-2xl font-semibold tracking-tight">Save your trips across devices</h1>
