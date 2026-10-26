@@ -48,7 +48,7 @@ export function GoogleSignIn({ returnTo, failed }: { returnTo: string; failed: b
         <Alert ref={signOutNotice} tabIndex={-1}>
           <AlertDescription>
             You’re already signed in. Sign out before choosing another Google account.
-            <Link href="/trips" className="flex min-h-11 items-center underline underline-offset-4">
+            <Link href="/trips" className="flex min-h-11 items-center">
               Go to my trips
             </Link>
           </AlertDescription>

@@ -183,7 +183,7 @@ export function PrivateSession({
         <Button className="min-h-11" onClick={retrySession} disabled={retrying}>
           {retrying ? 'Trying again…' : 'Try again'}
         </Button>
-        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center underline">
+        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center">
           Sign in again
         </Link>
       </section>
@@ -196,7 +196,7 @@ export function PrivateSession({
           Sign in to continue
         </h1>
         <p>Use the same Google account to return to your trips.</p>
-        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center underline">
+        <Link href="/sign-in?returnTo=%2Ftrips" className="flex min-h-11 items-center">
           Sign in again
         </Link>
         <Button className="min-h-11" variant="outline" onClick={signOut}>

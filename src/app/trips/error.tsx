@@ -16,7 +16,7 @@ export default function TripsError({ reset }: { reset: () => void }) {
       <Button className="min-h-11 self-start" onClick={reset}>
         Try again
       </Button>
-      <Link href="/sign-in" className="flex min-h-11 items-center underline">
+      <Link href="/sign-in" className="flex min-h-11 items-center">
         Back to sign in
       </Link>
     </main>

@@ -22,10 +22,7 @@ export default function Page() {
         >
           Your app starts here <ArrowRight aria-hidden="true" data-icon="inline-end" />
         </Link>
-        <Link
-          href="/sign-in"
-          className="flex min-h-11 w-fit items-center underline underline-offset-4"
-        >
+        <Link href="/sign-in" className="flex min-h-11 w-fit items-center">
           Sign in to TrailPlan
         </Link>
       </div>
