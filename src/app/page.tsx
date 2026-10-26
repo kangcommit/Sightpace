@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
@@ -35,29 +36,35 @@ export default async function Page() {
             </Link>
           </div>
         </div>
-        <div className="rounded-xl border p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="font-semibold">A day in Porto</h2>
-            <span className="text-muted-foreground text-sm">Sample</span>
-          </div>
-          <ol className="flex flex-col divide-y">
-            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
-              <span>Breakfast</span>
-              <time>09:00–09:45</time>
-            </li>
-            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
-              <span>National Museum</span>
-              <time>10:05–11:35</time>
-            </li>
-            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
-              <span>Lunch · booked 12:00</span>
-              <time>Arrive 12:05</time>
-            </li>
-          </ol>
-          <p className="text-muted-foreground mt-3 text-sm">
-            A five-minute late arrival is shown before you build your own day.
-          </p>
-        </div>
+        <Card>
+          <CardHeader className="grid-cols-[1fr_auto] items-center">
+            <CardTitle role="heading" aria-level={2}>
+              A day in Porto
+            </CardTitle>
+            <CardAction className="self-center">
+              <span className="text-muted-foreground text-sm">Sample</span>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <ol className="flex flex-col divide-y">
+              <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+                <span>Breakfast</span>
+                <time>09:00–09:45</time>
+              </li>
+              <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+                <span>National Museum</span>
+                <time>10:05–11:35</time>
+              </li>
+              <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+                <span>Lunch · booked 12:00</span>
+                <time>Arrive 12:05</time>
+              </li>
+            </ol>
+            <p className="text-muted-foreground mt-3 text-sm">
+              A five-minute late arrival is shown before you build your own day.
+            </p>
+          </CardContent>
+        </Card>
       </section>
     </main>
   )
