@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { signInPath } from '@/lib/auth-redirect'
@@ -27,12 +27,18 @@ import { useTripAutosave } from './use-trip-autosave'
 export function TripEditor({
   trip,
   minimumDate = todayDate(),
+  initialDraft,
+  sampleMode = false,
+  onDraftChange,
 }: {
   trip: InitialTrip
   minimumDate?: string
+  initialDraft?: TripEditorDraft
+  sampleMode?: boolean
+  onDraftChange?: (draft: TripEditorDraft) => void
 }) {
   const router = useRouter()
-  const initial = useMemo(() => toDraft(trip), [trip])
+  const initial = useMemo(() => initialDraft ?? toDraft(trip), [initialDraft, trip])
   const [draft, setDraft] = useState(initial)
   const [selectedKey, setSelectedKey] = useState(initial.days[0]?.key ?? '')
   const [newDayOpen, setNewDayOpen] = useState(false)
@@ -91,7 +97,12 @@ export function TripEditor({
     draft,
     setDraft,
     canSave,
+    enabled: !sampleMode,
   })
+
+  useEffect(() => {
+    onDraftChange?.(draft)
+  }, [draft, onDraftChange])
 
   function updateDay(
     key: string,
@@ -352,7 +363,7 @@ export function TripEditor({
           {announcement}
         </p>
       ) : null}
-      {saveError ? (
+      {!sampleMode && saveError ? (
         <div className="flex flex-col items-start gap-3">
           <Alert variant="destructive">
             <AlertDescription>
@@ -393,19 +404,21 @@ export function TripEditor({
         onCloseDay={handleCloseDayDelete}
         onDeleteDay={deleteDay}
       />
-      <p role="status" aria-live="polite" className="sr-only">
-        {saveStatus === 'saving'
-          ? 'Saving…'
-          : saveStatus === 'failed'
-            ? 'Changes haven’t saved'
-            : saveStatus === 'unauthenticated'
-              ? 'Saving paused'
-              : !canSave && dirty
-                ? 'Fix the highlighted fields to save'
-                : dirty
-                  ? 'Unsaved changes'
-                  : 'All changes saved'}
-      </p>
+      {!sampleMode ? (
+        <p role="status" aria-live="polite" className="sr-only">
+          {saveStatus === 'saving'
+            ? 'Saving…'
+            : saveStatus === 'failed'
+              ? 'Changes haven’t saved'
+              : saveStatus === 'unauthenticated'
+                ? 'Saving paused'
+                : !canSave && dirty
+                  ? 'Fix the highlighted fields to save'
+                  : dirty
+                    ? 'Unsaved changes'
+                    : 'All changes saved'}
+        </p>
+      ) : null}
       {dialogOpen ? (
         <ActivityDialog
           key={editing?.key ?? 'new'}
