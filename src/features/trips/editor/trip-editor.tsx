@@ -1,11 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { signInPath } from '@/lib/auth-redirect'
 import { calculateDaySchedule } from '@/lib/scheduling'
-import { saveTripEditorAction } from '../server/save-trip-action'
 import { isDateTodayOrLater, todayDate } from '../shared/date-rules'
 import { ActivityDialog } from './components/activity-dialog'
 import { TripEditorActivities } from './components/trip-editor-activities'
@@ -21,6 +22,7 @@ import { TripEditorTripDetails } from './components/trip-editor-trip-details'
 import type { TripEditorDraft } from './editor-contract'
 import type { EditorActivity, InitialTrip } from './trip-editor-utils'
 import { fromTime, toDraft, validDate } from './trip-editor-utils'
+import { useTripAutosave } from './use-trip-autosave'
 
 export function TripEditor({
   trip,
@@ -32,8 +34,6 @@ export function TripEditor({
   const router = useRouter()
   const initial = useMemo(() => toDraft(trip), [trip])
   const [draft, setDraft] = useState(initial)
-  const [saved, setSaved] = useState(initial)
-  const [revision, setRevision] = useState(trip.revision)
   const [selectedKey, setSelectedKey] = useState(initial.days[0]?.key ?? '')
   const [newDayOpen, setNewDayOpen] = useState(false)
   const [newDayDate, setNewDayDate] = useState('')
@@ -44,12 +44,8 @@ export function TripEditor({
   const [editing, setEditing] = useState<EditorActivity | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dayError, setDayError] = useState<string | null>(null)
-  const [pageError, setPageError] = useState<string | null>(null)
-  const [needsReload, setNeedsReload] = useState(false)
   const [announcement, setAnnouncement] = useState('')
-  const [isPending, startTransition] = useTransition()
   const selected = draft.days.find((day) => day.key === selectedKey) ?? draft.days[0]
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
   const dateCounts = new Map<string, number>()
   for (const day of draft.days) dateCounts.set(day.date, (dateCounts.get(day.date) ?? 0) + 1)
   const selectedDuplicateDate = selected ? (dateCounts.get(selected.date) ?? 0) > 1 : false
@@ -81,6 +77,21 @@ export function TripEditor({
       })
     : null
   const scheduleByKey = new Map(schedule?.entries.map((entry) => [entry.activityId, entry]) ?? [])
+  const canSave = !titleInvalid && !destinationInvalid && !draft.days.some(invalidDay)
+  const {
+    dirty,
+    error: saveError,
+    needsReload,
+    retrySave,
+    status: saveStatus,
+  } = useTripAutosave({
+    tripId: trip.id,
+    initialDraft: initial,
+    initialRevision: trip.revision,
+    draft,
+    setDraft,
+    canSave,
+  })
 
   function updateDay(
     key: string,
@@ -281,60 +292,6 @@ export function TripEditor({
     setDeleteDayTarget(null)
   }
 
-  function save() {
-    const mutationId = crypto.randomUUID()
-    const submitted = {
-      ...draft,
-      title: draft.title.trim(),
-      destination: draft.destination.trim(),
-      days: draft.days.map((day) => ({
-        ...day,
-        activities: day.activities.map((activity) => ({
-          ...activity,
-          title: activity.title.trim(),
-          placeLabel: activity.placeLabel.trim(),
-        })),
-      })),
-    }
-    startTransition(async () => {
-      try {
-        const result = await saveTripEditorAction({
-          tripId: trip.id,
-          mutationId,
-          expectedRevision: revision,
-          snapshot: submitted,
-        })
-        if (!result.ok) {
-          setPageError(result.message)
-          setNeedsReload(result.code === 'CONFLICT' || result.code === 'TEMPORARILY_UNAVAILABLE')
-          return
-        }
-        const persisted = {
-          ...submitted,
-          days: submitted.days.map((day) => ({
-            ...day,
-            id: result.ids[day.key],
-            activities: day.activities.map((activity) => ({
-              ...activity,
-              id: result.ids[activity.key],
-            })),
-          })),
-        }
-        setDraft(persisted)
-        setSaved(persisted)
-        setRevision(result.revision)
-        setPageError(null)
-        setNeedsReload(false)
-        router.refresh()
-      } catch {
-        setPageError(
-          'We couldn’t confirm whether the trip saved. Reload to check before saving again; your edits are still here.',
-        )
-        setNeedsReload(true)
-      }
-    })
-  }
-
   return (
     <div className="flex flex-col gap-8">
       <TripEditorTripDetails
@@ -395,11 +352,32 @@ export function TripEditor({
           {announcement}
         </p>
       ) : null}
-      {pageError ? (
+      {saveError ? (
         <div className="flex flex-col items-start gap-3">
           <Alert variant="destructive">
-            <AlertDescription>{pageError}</AlertDescription>
+            <AlertDescription>
+              {saveError.message}{' '}
+              {saveError.code === 'UNAUTHENTICATED' ? (
+                <>
+                  Your edits remain in this tab.{' '}
+                  <Link
+                    href={signInPath(`/trips/${trip.id}`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="focus-visible:ring-ring rounded-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    Sign in in another tab
+                  </Link>
+                  , then retry saving.
+                </>
+              ) : null}
+            </AlertDescription>
           </Alert>
+          {saveError.code === 'TEMPORARILY_UNAVAILABLE' || saveError.code === 'UNAUTHENTICATED' ? (
+            <Button variant="outline" className="min-h-11" onClick={retrySave}>
+              Retry save
+            </Button>
+          ) : null}
           {needsReload ? (
             <Button variant="outline" className="min-h-11" onClick={handleRefresh}>
               Discard edits and reload latest
@@ -415,25 +393,19 @@ export function TripEditor({
         onCloseDay={handleCloseDayDelete}
         onDeleteDay={deleteDay}
       />
-      <div className="bg-background sticky bottom-0 flex items-center justify-between gap-4 border-t py-3">
-        <span role="status" aria-live="polite" className="text-muted-foreground text-sm">
-          {isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'All changes saved'}
-        </span>
-        <Button
-          className="min-h-11"
-          disabled={
-            !dirty ||
-            isPending ||
-            needsReload ||
-            titleInvalid ||
-            destinationInvalid ||
-            draft.days.some(invalidDay)
-          }
-          onClick={save}
-        >
-          {isPending ? 'Saving…' : 'Save changes'}
-        </Button>
-      </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {saveStatus === 'saving'
+          ? 'Saving…'
+          : saveStatus === 'failed'
+            ? 'Changes haven’t saved'
+            : saveStatus === 'unauthenticated'
+              ? 'Saving paused'
+              : !canSave && dirty
+                ? 'Fix the highlighted fields to save'
+                : dirty
+                  ? 'Unsaved changes'
+                  : 'All changes saved'}
+      </p>
       {dialogOpen ? (
         <ActivityDialog
           key={editing?.key ?? 'new'}
