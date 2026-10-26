@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 import { buttonVariants } from '@/components/ui/button'
+import { appRoutes } from '@/lib/routes'
 
 export default function Page() {
   return (
@@ -22,7 +23,7 @@ export default function Page() {
         >
           Your app starts here <ArrowRight aria-hidden="true" data-icon="inline-end" />
         </Link>
-        <Link href="/sign-in" className="flex min-h-11 w-fit items-center">
+        <Link href={appRoutes.signIn} className="flex min-h-11 w-fit items-center">
           Sign in to TrailPlan
         </Link>
       </div>

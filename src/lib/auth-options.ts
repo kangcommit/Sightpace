@@ -2,6 +2,7 @@ import type { BetterAuthOptions } from 'better-auth'
 import { APIError, createAuthMiddleware, formCsrfMiddleware, getSession } from 'better-auth/api'
 import { safeReturnPath, signInPath } from '@/lib/auth-redirect'
 import { getAuthEnv } from '@/lib/env'
+import { appRoutes } from '@/lib/routes'
 
 export function authOptions(source: NodeJS.ProcessEnv = process.env) {
   const env = getAuthEnv(source)
@@ -35,7 +36,7 @@ export function authOptions(source: NodeJS.ProcessEnv = process.env) {
     rateLimit: { enabled: true },
     logger: { disabled: true },
     onAPIError: {
-      errorURL: `${base.origin}/sign-in?error=oauth`,
+      errorURL: `${base.origin}${appRoutes.signIn}?error=oauth`,
       throw: true,
     },
     hooks: {
@@ -59,7 +60,7 @@ export function authOptions(source: NodeJS.ProcessEnv = process.env) {
         })
 
         if (session) {
-          if (callback) throw ctx.redirect('/trips')
+          if (callback) throw ctx.redirect(appRoutes.trips)
 
           throw new APIError('CONFLICT', {
             code: 'SIGN_OUT_REQUIRED',

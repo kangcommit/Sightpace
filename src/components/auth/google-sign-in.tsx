@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth-client'
 import { safeReturnPath, signInPath } from '@/lib/auth-redirect'
+import { appRoutes } from '@/lib/routes'
 
 export function GoogleSignIn({ returnTo, failed }: { returnTo: string; failed: boolean }) {
   const [pending, setPending] = useState(false)
@@ -48,7 +49,7 @@ export function GoogleSignIn({ returnTo, failed }: { returnTo: string; failed: b
         <Alert ref={signOutNotice} tabIndex={-1}>
           <AlertDescription>
             You’re already signed in. Sign out before choosing another Google account.
-            <Link href="/trips" className="flex min-h-11 items-center">
+            <Link href={appRoutes.trips} className="flex min-h-11 items-center">
               Go to my trips
             </Link>
           </AlertDescription>
