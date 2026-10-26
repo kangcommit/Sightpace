@@ -125,13 +125,83 @@ const createInput = z
   })
   .superRefine((value, context) => {
     const dates = new Set<string>()
-
-    for (const [dayIndex, current] of value.days.entries()) {
+    value.days.forEach((current, index) => {
       if (dates.has(current.date))
-        context.addIssue({ code: 'custom', path: ['days', dayIndex], message: 'Invalid day.' })
-
+        context.addIssue({ code: 'custom', path: ['days', index], message: 'Invalid day.' })
       dates.add(current.date)
-    }
+    })
+  })
+
+const sampleCopyInput = z
+  .strictObject({
+    mutationId: uuid,
+    title: label(120),
+    destination: label(120),
+    days: z
+      .array(
+        z
+          .strictObject({
+            key: z.string().min(1).max(80),
+            date,
+            startMinute: minute(0, 1438),
+            finishMinute: minute(1, 1439),
+            activities: z
+              .array(
+                z.strictObject({
+                  key: z.string().min(1).max(80),
+                  title: label(120),
+                  placeLabel: label(200).or(z.literal('')),
+                  durationMinutes: minute(1, 1439),
+                  fixedStartMinute: minute(0, 1439).nullable(),
+                }),
+              )
+              .max(100),
+            travelEstimates: z
+              .array(
+                z.strictObject({
+                  fromKey: z.string().min(1).max(80),
+                  toKey: z.string().min(1).max(80),
+                  minutes: minute(0, 1439),
+                }),
+              )
+              .max(1000),
+          })
+          .refine((item) => item.startMinute < item.finishMinute),
+      )
+      .max(30),
+  })
+  .superRefine((value, context) => {
+    const allKeys = new Set<string>()
+    const dates = new Set<string>()
+    value.days.forEach((day, index) => {
+      if (dates.has(day.date) || allKeys.has(day.key))
+        context.addIssue({ code: 'custom', path: ['days', index], message: 'Invalid day.' })
+      dates.add(day.date)
+      allKeys.add(day.key)
+      const activityKeys = new Set<string>()
+      for (const activity of day.activities) {
+        if (activityKeys.has(activity.key) || allKeys.has(activity.key))
+          context.addIssue({ code: 'custom', path: ['days', index], message: 'Invalid activity.' })
+        activityKeys.add(activity.key)
+        allKeys.add(activity.key)
+      }
+      const pairs = new Set<string>()
+      for (const travel of day.travelEstimates) {
+        const pair = JSON.stringify([travel.fromKey, travel.toKey])
+        if (
+          !activityKeys.has(travel.fromKey) ||
+          !activityKeys.has(travel.toKey) ||
+          travel.fromKey === travel.toKey ||
+          pairs.has(pair)
+        )
+          context.addIssue({
+            code: 'custom',
+            path: ['days', index],
+            message: 'Invalid travel estimate.',
+          })
+        pairs.add(pair)
+      }
+    })
   })
 
 const saveInput = z.strictObject({
@@ -383,6 +453,79 @@ export function createTrip(db: PrismaClient, ownerId: string, input: unknown) {
         },
       })
 
+      return { tripId: trip.id, revision: 1 }
+    })
+  })
+}
+
+/** Creates a private copy from a strictly validated public sample snapshot. */
+export function createSampleCopy(db: PrismaClient, ownerId: string, input: unknown) {
+  return run(async () => {
+    const value = parse(sampleCopyInput, input)
+    const payloadHash = digest('CREATE_TRIP', value)
+
+    return db.$transaction(async (tx) => {
+      await lockOwner(tx, ownerId)
+      const prior = await replayCreation(tx, ownerId, value.mutationId, payloadHash)
+      if (prior) return { tripId: prior.targetTripId, revision: prior.resultRevision as number }
+
+      const trip = await tx.trip.create({
+        data: { userId: ownerId, title: value.title, destination: value.destination },
+        select: { id: true },
+      })
+
+      for (const current of value.days) {
+        const day = await tx.day.create({
+          data: {
+            tripId: trip.id,
+            date: new Date(`${current.date}T00:00:00.000Z`),
+            startMinute: current.startMinute,
+            finishMinute: current.finishMinute,
+          },
+          select: { id: true },
+        })
+        const ids = new Map<string, string>()
+        for (const [activityPosition, activity] of current.activities.entries()) {
+          const created = await tx.activity.create({
+            data: {
+              dayId: day.id,
+              title: activity.title,
+              placeLabel: activity.placeLabel || null,
+              durationMinutes: activity.durationMinutes,
+              fixedStartMinute: activity.fixedStartMinute,
+              position: activityPosition,
+            },
+            select: { id: true },
+          })
+          ids.set(activity.key, created.id)
+        }
+        for (const estimate of current.travelEstimates) {
+          const fromActivityId = ids.get(estimate.fromKey)
+          const toActivityId = ids.get(estimate.toKey)
+          if (!fromActivityId || !toActivityId) invalid()
+
+          await tx.travelEstimate.create({
+            data: {
+              dayId: day.id,
+              fromActivityId,
+              toActivityId,
+              minutes: estimate.minutes,
+            },
+          })
+        }
+      }
+
+      await tx.mutationReceipt.create({
+        data: {
+          userId: ownerId,
+          mutationId: value.mutationId,
+          operation: 'CREATE_TRIP',
+          targetTripId: trip.id,
+          payloadHash,
+          resultKind: 'CREATED',
+          resultRevision: 1,
+        },
+      })
       return { tripId: trip.id, revision: 1 }
     })
   })
