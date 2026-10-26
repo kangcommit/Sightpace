@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import type { DayScheduleResult } from '@/lib/scheduling'
 import type { EditorActivity, EditorDay } from '../trip-editor-utils'
 import { formatTime, toTime } from '../trip-editor-utils'
@@ -104,6 +105,7 @@ function ActivityItem({
 
   return (
     <li
+      id={`activity-${activity.key}`}
       tabIndex={-1}
       aria-label={`Activity ${index + 1}: ${activity.title}`}
       data-activity-key={activity.key}
@@ -125,6 +127,12 @@ function ActivityItem({
             <p className="text-sm">
               Booked {toTime(activity.fixedStartMinute)}
               {` · projected arrival ${formatTime(entry.arrivalMinute)} · ${entry.lateMinutes} min late`}
+            </p>
+          ) : null}
+          {entry && entry.waitMinutes > 0 && entry.intendedBookingStartMinute !== null ? (
+            <p className="text-sm">
+              Arrive {formatTime(entry.arrivalMinute)} · wait {entry.waitMinutes} min · booking{' '}
+              {toTime(entry.intendedBookingStartMinute)}.
             </p>
           ) : null}
           {entry?.provisional ? (
@@ -217,7 +225,8 @@ function TravelControl({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+    <div className="flex flex-wrap items-end gap-2 pt-3">
+      <Separator className="basis-full" />
       <Field className="min-w-40 flex-1">
         <FieldLabel htmlFor={`travel-${from}-${to}`}>
           Travel minutes: {fromTitle} to {toTitle}

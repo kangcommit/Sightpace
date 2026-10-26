@@ -188,7 +188,7 @@ export function SamplePlanner({
     )
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       <Link href={appRoutes.home} className="flex min-h-11 w-fit items-center font-semibold">
         TrailPlan
       </Link>
