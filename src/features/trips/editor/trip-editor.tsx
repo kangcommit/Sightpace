@@ -9,15 +9,14 @@ import { signInPath } from '@/lib/auth-redirect'
 import { calculateDaySchedule } from '@/lib/scheduling'
 import { isDateTodayOrLater, todayDate } from '../shared/date-rules'
 import { ActivityDialog } from './components/activity-dialog'
-import { TripEditorActivities } from './components/trip-editor-activities'
 import { TripEditorDayFields } from './components/trip-editor-day-fields'
 import { TripEditorDayNavigation } from './components/trip-editor-day-navigation'
+import { TripEditorDayView } from './components/trip-editor-day-view'
 import {
   type ActivityDeleteTarget,
   type DayDeleteTarget,
   TripEditorDeleteDialogs,
 } from './components/trip-editor-delete-dialogs'
-import { TripEditorScheduleSummary } from './components/trip-editor-schedule-summary'
 import { TripEditorTripDetails } from './components/trip-editor-trip-details'
 import type { TripEditorDraft } from './editor-contract'
 import type { EditorActivity, InitialTrip } from './trip-editor-utils'
@@ -330,7 +329,7 @@ export function TripEditor({
           onFinishChange={setNewDayFinish}
           onAdd={addDay}
         />
-        {selected ? (
+        {selected && schedule ? (
           <>
             <TripEditorDayFields
               day={selected}
@@ -341,20 +340,18 @@ export function TripEditor({
               onFinishChange={handleSelectedFinishChange}
               onDelete={handleDeleteDayRequest}
             />
-            <TripEditorActivities
+            <TripEditorDayView
               day={selected}
+              schedule={schedule}
               scheduleByKey={scheduleByKey}
-              onAdd={handleAddActivity}
-              onMove={moveActivity}
-              onEdit={handleEditActivity}
-              onDelete={handleDeleteActivityRequest}
+              onAddActivity={handleAddActivity}
+              onMoveActivity={moveActivity}
+              onEditActivity={handleEditActivity}
+              onDeleteActivity={handleDeleteActivityRequest}
               onTravelChange={setTravelEstimate}
             />
-            {schedule ? (
-              <TripEditorScheduleSummary schedule={schedule} finishMinute={selected.finishMinute} />
-            ) : null}
           </>
-        ) : (
+        ) : selected ? null : (
           <p className="text-muted-foreground">Add a day to start planning.</p>
         )}
       </section>
