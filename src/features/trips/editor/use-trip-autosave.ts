@@ -1,0 +1,190 @@
+'use client'
+
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react'
+import { type SaveTripEditorResult, saveTripEditorAction } from '../server/save-trip-action'
+import type { TripEditorDraft } from './editor-contract'
+
+const saveDebounceMs = 500
+
+type SaveRequest = {
+  tripId: string
+  mutationId: string
+  expectedRevision: number
+  snapshot: TripEditorDraft
+}
+
+type PendingSave = {
+  request: SaveRequest
+  sourceDraft: TripEditorDraft
+}
+
+type SaveError = Extract<SaveTripEditorResult, { ok: false }>
+type SaveStatus = 'idle' | 'saving' | 'failed' | 'unauthenticated' | 'conflict' | 'invalid'
+
+function normalizedDraft(draft: TripEditorDraft): TripEditorDraft {
+  return {
+    ...draft,
+    title: draft.title.trim(),
+    destination: draft.destination.trim(),
+    days: draft.days.map((day) => ({
+      ...day,
+      activities: day.activities.map((activity) => ({
+        ...activity,
+        title: activity.title.trim(),
+        placeLabel: activity.placeLabel.trim(),
+      })),
+    })),
+  }
+}
+
+function withServerIds(draft: TripEditorDraft, ids: Record<string, string>) {
+  return {
+    ...draft,
+    days: draft.days.map((day) => ({
+      ...day,
+      ...(ids[day.key] ? { id: ids[day.key] } : {}),
+      activities: day.activities.map((activity) => ({
+        ...activity,
+        ...(ids[activity.key] ? { id: ids[activity.key] } : {}),
+      })),
+    })),
+  }
+}
+
+export function useTripAutosave({
+  tripId,
+  initialDraft,
+  initialRevision,
+  draft,
+  setDraft,
+  canSave,
+}: {
+  tripId: string
+  initialDraft: TripEditorDraft
+  initialRevision: number
+  draft: TripEditorDraft
+  setDraft: Dispatch<SetStateAction<TripEditorDraft>>
+  canSave: boolean
+}) {
+  const [savedDraft, setSavedDraft] = useState(initialDraft)
+  const [status, setStatus] = useState<SaveStatus>('idle')
+  const [error, setError] = useState<SaveError | null>(null)
+  const [needsReload, setNeedsReload] = useState(false)
+  const pendingSave = useRef<PendingSave | null>(null)
+  const blockedSnapshot = useRef<string | null>(null)
+  const inFlight = useRef(false)
+  const revisionRef = useRef(initialRevision)
+  const performSaveRef = useRef<(pending: PendingSave) => Promise<void>>(async () => {})
+  const dirty = JSON.stringify(draft) !== JSON.stringify(savedDraft)
+
+  async function performSave(pending: PendingSave) {
+    if (inFlight.current) return
+
+    inFlight.current = true
+    setStatus('saving')
+    setError(null)
+
+    try {
+      const result = await saveTripEditorAction(pending.request)
+      if (!result.ok) {
+        setError(result)
+        if (result.code === 'TEMPORARILY_UNAVAILABLE') {
+          setStatus('failed')
+          return
+        }
+        if (result.code === 'UNAUTHENTICATED') {
+          setStatus('unauthenticated')
+          return
+        }
+        pendingSave.current = null
+        if (result.code === 'CONFLICT' || result.code === 'NOT_FOUND') {
+          setNeedsReload(true)
+          setStatus('conflict')
+          return
+        }
+        blockedSnapshot.current = JSON.stringify(pending.sourceDraft)
+        setStatus('invalid')
+        return
+      }
+
+      pendingSave.current = null
+      revisionRef.current = result.revision
+      const persistedDraft = withServerIds(pending.request.snapshot, result.ids)
+      setSavedDraft(persistedDraft)
+      setDraft((current) =>
+        current === pending.sourceDraft ? persistedDraft : withServerIds(current, result.ids),
+      )
+      setStatus('idle')
+      setError(null)
+    } catch {
+      setStatus('failed')
+      setError({
+        ok: false,
+        code: 'TEMPORARILY_UNAVAILABLE',
+        message:
+          'We couldn’t confirm whether your changes saved. Retry safely; your edits are still here.',
+      })
+    } finally {
+      inFlight.current = false
+    }
+  }
+
+  performSaveRef.current = performSave
+
+  useEffect(() => {
+    if (!dirty || !canSave || needsReload || inFlight.current || pendingSave.current) return
+    if (status === 'unauthenticated' || status === 'failed' || status === 'conflict') return
+
+    const fingerprint = JSON.stringify(draft)
+    if (status === 'invalid') {
+      if (blockedSnapshot.current === fingerprint) return
+
+      blockedSnapshot.current = null
+      setStatus('idle')
+      setError(null)
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const pending: PendingSave = {
+        request: {
+          tripId,
+          mutationId: crypto.randomUUID(),
+          expectedRevision: revisionRef.current,
+          snapshot: normalizedDraft(draft),
+        },
+        sourceDraft: draft,
+      }
+      pendingSave.current = pending
+      void performSaveRef.current(pending)
+    }, saveDebounceMs)
+
+    return () => window.clearTimeout(timer)
+  }, [canSave, dirty, draft, needsReload, status, tripId])
+
+  useEffect(() => {
+    if (status !== 'conflict' || initialRevision === revisionRef.current) return
+
+    pendingSave.current = null
+    blockedSnapshot.current = null
+    revisionRef.current = initialRevision
+    setDraft(initialDraft)
+    setSavedDraft(initialDraft)
+    setNeedsReload(false)
+    setError(null)
+    setStatus('idle')
+  }, [initialDraft, initialRevision, setDraft, status])
+
+  function retrySave() {
+    if (inFlight.current || !pendingSave.current) return
+    void performSaveRef.current(pendingSave.current)
+  }
+
+  return {
+    dirty,
+    error,
+    needsReload,
+    retrySave,
+    status,
+  }
+}

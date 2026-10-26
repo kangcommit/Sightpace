@@ -1,6 +1,6 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
@@ -14,6 +14,22 @@ const requestSchema = z.strictObject({
   expectedRevision: z.number().int().positive(),
   snapshot: tripEditorDraftSchema,
 })
+
+// Stable server IDs keep an identical mutation retry's canonical payload unchanged.
+const editorIdNamespace = Buffer.from('7ef6f388d8f049bdbdbd7f8cc8c3d786', 'hex')
+
+function editorIdForKey(mutationId: string, key: string) {
+  const bytes = createHash('sha1')
+    .update(editorIdNamespace)
+    .update(`${mutationId}:${key}`)
+    .digest()
+    .subarray(0, 16)
+  bytes[6] = (bytes[6] & 0x0f) | 0x50
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = bytes.toString('hex')
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
 
 export type SaveTripEditorResult =
   | { ok: true; revision: number; ids: Record<string, string> }
@@ -57,11 +73,11 @@ export async function saveTripEditorAction(input: unknown): Promise<SaveTripEdit
     title: parsed.data.snapshot.title,
     destination: parsed.data.snapshot.destination,
     days: parsed.data.snapshot.days.map((day) => {
-      const dayId = day.id ?? randomUUID()
+      const dayId = day.id ?? editorIdForKey(parsed.data.mutationId, day.key)
       ids[day.key] = dayId
       const activityIds = new Map(
         day.activities.map((activity) => {
-          const id = activity.id ?? randomUUID()
+          const id = activity.id ?? editorIdForKey(parsed.data.mutationId, activity.key)
           ids[activity.key] = id
           return [activity.key, id] as const
         }),
