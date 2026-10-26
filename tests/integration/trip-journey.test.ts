@@ -211,6 +211,7 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   const tripTitle = 'Synthetic Lisbon weekend'
   const destination = 'Lisbon, Portugal'
   const date = new Date().toISOString().slice(0, 10)
+
   // Act
   const sessionResponse = await firstContext.request.get(`${origin}/api/auth/get-session`)
   const sessionData = (await sessionResponse.json()) as { user?: { id?: string } } | null
@@ -333,4 +334,80 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
 
   await firstContext.close()
   await secondContext.close()
+}, 120_000)
+
+it('edits the public sample, confirms reset, preserves sign-in return data, and saves one owned copy', async () => {
+  // Arrange
+  if (!browser) browser = await chromium.launch({ headless: true })
+  if (!userId) throw new Error('Synthetic browser-test identity was not initialized.')
+  const context = await browser.newContext({ baseURL: origin })
+  const page = await context.newPage()
+  const title = `Sample copy ${randomUUID()}`
+
+  // Act
+  await page.goto('/demo')
+  await page.getByRole('button', { name: 'Reset sample' }).waitFor()
+  await page.setViewportSize({ width: 360, height: 800 })
+  const sampleMobileWidth = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }))
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.getByText('Booked 12:00 · projected arrival 12:05 · 5 min late').waitFor()
+  await page.getByLabel('Trip name').fill('Temporary sample change')
+  await page.getByRole('button', { name: 'Reset sample' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Reset sample' }).click()
+  await page.waitForFunction(
+    () => (document.querySelector('#trip-title') as HTMLInputElement)?.value === 'A day in Porto',
+  )
+  const resetTitle = await page.getByLabel('Trip name').inputValue()
+  await page.getByLabel('Trip name').fill(title)
+  const sampleTripCountBeforeCopy = await db.trip.count({ where: { userId } })
+  await page.getByRole('button', { name: 'Save a copy' }).click()
+  await page.waitForURL(/\/sign-in\?returnTo=%2Fdemo/)
+  const signInBackHref = await page.getByRole('link', { name: 'TrailPlan' }).getAttribute('href')
+  await context.addCookies(
+    sessionCookies.map((cookie) => ({
+      ...cookie,
+      httpOnly: cookie.httpOnly ?? true,
+      secure: cookie.secure ?? false,
+      sameSite: cookie.sameSite ?? 'Lax',
+      expires: cookie.expires ?? -1,
+    })),
+  )
+  await page.getByRole('link', { name: 'TrailPlan' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('heading', { name: 'Save a copy to your trips?' })
+    .waitFor()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Save copy' }).click()
+  await page.waitForURL(/\/trips\/[0-9a-f-]+$/)
+  const tripId = new URL(page.url()).pathname.split('/').at(-1)
+  const stored = await db.trip.findFirstOrThrow({
+    where: { id: tripId, userId },
+    select: {
+      title: true,
+      destination: true,
+      days: {
+        select: {
+          activities: { select: { title: true, fixedStartMinute: true } },
+          travelEstimates: { select: { minutes: true } },
+        },
+      },
+    },
+  })
+
+  // Assert
+  expect(resetTitle).toBe('A day in Porto')
+  expect(signInBackHref).toBe('/demo')
+  expect(stored.title).toBe(title)
+  expect(sampleTripCountBeforeCopy).toBe(0)
+  expect(sampleMobileWidth.content).toBeLessThanOrEqual(sampleMobileWidth.viewport)
+  expect(stored.destination).toBe('Porto, Portugal')
+  expect(stored.days[0]?.activities).toHaveLength(6)
+  expect(
+    stored.days[0]?.activities.find((activity) => activity.title === 'Lunch')?.fixedStartMinute,
+  ).toBe(720)
+  expect(stored.days[0]?.travelEstimates).toHaveLength(4)
+  await context.close()
 }, 120_000)
