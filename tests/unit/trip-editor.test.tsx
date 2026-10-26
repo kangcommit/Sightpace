@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TripEditor } from '@/features/trips/editor/trip-editor'
 import { todayDate } from '@/features/trips/shared/date-rules'
 
@@ -9,7 +9,12 @@ vi.mock('@/features/trips/server/save-trip-action', () => ({ saveTripEditorActio
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.clearAllMocks()
+})
+
+beforeEach(() => {
+  mocks.save.mockResolvedValue({ ok: true, revision: 2, ids: {} })
 })
 
 const currentDate = todayDate()
@@ -252,7 +257,7 @@ it('deletes an activity from the local draft after confirmation', () => {
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   expect(screen.queryByText('1. Museum')).not.toBeInTheDocument()
   expect(screen.getByText('1. Lunch')).toBeVisible()
-  expect(screen.getByText('Unsaved changes')).toBeVisible()
+  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
   expect(mocks.save).not.toHaveBeenCalled()
 })
 
@@ -285,7 +290,7 @@ it('deletes a day and its activities from the local draft after confirmation', (
   expect(screen.queryByRole('button', { name: /Day 1 ·/ })).not.toBeInTheDocument()
   expect(screen.queryByText('1. Museum')).not.toBeInTheDocument()
   expect(screen.getByText('Add a day to start planning.')).toBeVisible()
-  expect(screen.getByText('Unsaved changes')).toBeVisible()
+  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
   expect(mocks.save).not.toHaveBeenCalled()
 })
 
@@ -420,8 +425,9 @@ it('prevents adding a day before the current date', () => {
   expect(screen.getAllByRole('button', { name: /Day / })).toHaveLength(1)
 })
 
-it('marks an existing past day invalid and prevents saving until its date is corrected', () => {
+it('marks an existing past day invalid and pauses autosave until its date is corrected', async () => {
   // Arrange
+  vi.useFakeTimers()
   render(
     <TripEditor
       minimumDate={currentDate}
@@ -435,13 +441,14 @@ it('marks an existing past day invalid and prevents saving until its date is cor
   fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Updated trip' } })
 
   // Act
-  const saveButton = screen.getByRole('button', { name: 'Save changes' })
+  await act(async () => vi.advanceTimersByTimeAsync(1000))
 
   // Assert
   expect(date).toHaveAttribute('min', currentDate)
   expect(date).toHaveAttribute('aria-invalid', 'true')
   expect(screen.getByText('Choose today or a future date.')).toBeVisible()
-  expect(saveButton).toBeDisabled()
+  expect(screen.getByRole('status')).toHaveTextContent('Fix the highlighted fields to save')
+  expect(mocks.save).not.toHaveBeenCalled()
 })
 
 it('associates a duplicate new-day date error with its input', () => {
@@ -505,11 +512,11 @@ it('closes a modified activity form without a confirmation and leaves the trip u
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(screen.queryByText('1. Draft museum')).not.toBeInTheDocument()
-  expect(screen.getByText('All changes saved')).toBeVisible()
+  expect(screen.getByRole('status')).toHaveTextContent('All changes saved')
   expect(mocks.save).not.toHaveBeenCalled()
 })
 
-it('commits an activity locally and does not save until the explicit trip save action', () => {
+it('commits an activity locally and queues it for autosave', () => {
   // Arrange
   render(
     <TripEditor
@@ -526,12 +533,111 @@ it('commits an activity locally and does not save until the explicit trip save a
 
   // Assert
   expect(screen.getByText('1. Gallery')).toBeVisible()
-  expect(screen.getByText('Unsaved changes')).toBeVisible()
+  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
   expect(mocks.save).not.toHaveBeenCalled()
+})
+
+it('autosaves valid edits after a 500ms debounce', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  render(<TripEditor trip={trip} />)
+  const name = screen.getByLabelText('Trip name')
+  fireEvent.change(name, { target: { value: 'Lisbon and Sintra' } })
+
+  // Act
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+
+  // Assert
+  expect(mocks.save).toHaveBeenCalledOnce()
+  expect(mocks.save.mock.calls[0][0]).toMatchObject({
+    tripId: trip.id,
+    expectedRevision: trip.revision,
+    snapshot: { title: 'Lisbon and Sintra' },
+  })
+  expect(mocks.save.mock.calls[0][0].mutationId).toMatch(/^[0-9a-f-]{36}$/i)
+  expect(screen.getByRole('status')).toHaveTextContent('All changes saved')
+})
+
+it('serializes saves and sends edits made during a write as the next revision', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  let resolveFirst: ((result: unknown) => void) | undefined
+  mocks.save.mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
+  render(<TripEditor trip={trip} />)
+  fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'First edit' } })
+
+  // Act
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+  fireEvent.change(screen.getByLabelText('Destination label'), {
+    target: { value: 'Lisbon and Sintra' },
+  })
+  await act(async () => vi.advanceTimersByTimeAsync(1000))
+  const requestsWhileFirstSaveWasPending = mocks.save.mock.calls.length
+  await act(async () => {
+    resolveFirst?.({ ok: true, revision: 2, ids: {} })
+  })
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+
+  // Assert
+  expect(requestsWhileFirstSaveWasPending).toBe(1)
+  expect(mocks.save).toHaveBeenCalledTimes(2)
+  expect(mocks.save.mock.calls[1][0]).toMatchObject({
+    expectedRevision: 2,
+    snapshot: { title: 'First edit', destination: 'Lisbon and Sintra' },
+  })
+})
+
+it('retries an uncertain save with the exact same mutation and snapshot', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  mocks.save.mockRejectedValueOnce(new Error('response lost'))
+  mocks.save.mockResolvedValueOnce({ ok: true, revision: 2, ids: {} })
+  render(<TripEditor trip={trip} />)
+  fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Retry trip' } })
+
+  // Act
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+  const originalRequest = structuredClone(mocks.save.mock.calls[0][0])
+  fireEvent.click(screen.getByRole('button', { name: 'Retry save' }))
+  await act(async () => vi.runAllTimersAsync())
+
+  // Assert
+  expect(mocks.save).toHaveBeenCalledTimes(2)
+  expect(mocks.save.mock.calls[1][0]).toEqual(originalRequest)
+  expect(screen.getByRole('status')).toHaveTextContent('All changes saved')
+})
+
+it('pauses autosave after session expiry and keeps the draft available for retry', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  mocks.save.mockResolvedValueOnce({
+    ok: false,
+    code: 'UNAUTHENTICATED',
+    message: 'Sign in to save your changes.',
+  })
+  render(<TripEditor trip={trip} />)
+  const name = screen.getByLabelText('Trip name')
+  fireEvent.change(name, { target: { value: 'Private draft' } })
+
+  // Act
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+  fireEvent.change(name, { target: { value: 'Private draft with edits' } })
+  await act(async () => vi.advanceTimersByTimeAsync(1000))
+
+  // Assert
+  expect(name).toHaveValue('Private draft with edits')
+  expect(screen.getByRole('status')).toHaveTextContent('Saving paused')
+  expect(screen.getByRole('link', { name: 'Sign in in another tab' })).toHaveAttribute(
+    'target',
+    '_blank',
+  )
+  expect(screen.getByRole('button', { name: 'Retry save' })).toBeVisible()
+  expect(mocks.save).toHaveBeenCalledOnce()
 })
 
 it('retains a conflicting draft and requires a deliberate reload before another save', async () => {
   // Arrange
+  vi.useFakeTimers()
   mocks.save.mockResolvedValue({
     ok: false,
     code: 'CONFLICT',
@@ -543,13 +649,13 @@ it('retains a conflicting draft and requires a deliberate reload before another 
   fireEvent.change(name, { target: { value: 'Local edit' } })
 
   // Act
-  fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-  await screen.findByRole('button', { name: 'Discard edits and reload latest' })
+  await act(async () => vi.advanceTimersByTimeAsync(500))
 
   // Assert
+  expect(screen.getByRole('button', { name: 'Discard edits and reload latest' })).toBeVisible()
   expect(name).toHaveValue('Local edit')
   expect(screen.getByText(/This trip changed since you opened it/)).toBeVisible()
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled())
+  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
   fireEvent.click(screen.getByRole('button', { name: 'Discard edits and reload latest' }))
   expect(mocks.refresh).toHaveBeenCalledOnce()
 })
