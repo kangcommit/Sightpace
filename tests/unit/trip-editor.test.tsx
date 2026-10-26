@@ -280,13 +280,17 @@ it('deletes an activity from the local draft after confirmation', () => {
 it('keeps a day and its activities when its delete confirmation is cancelled', () => {
   // Arrange
   render(<TripEditor trip={trip} />)
-  fireEvent.click(screen.getByRole('button', { name: 'Delete day' }))
+  const deleteDayButton = screen.getByRole('button', { name: 'Delete day' })
+  const deleteDayText = deleteDayButton.textContent
+  fireEvent.click(deleteDayButton)
   const confirmation = screen.getByRole('alertdialog')
 
   // Act
   fireEvent.click(within(confirmation).getByRole('button', { name: 'Cancel' }))
 
   // Assert
+  expect(deleteDayButton).toHaveAttribute('aria-label', 'Delete day')
+  expect(deleteDayText).toBe('')
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Day 1 ·/ })).toBeVisible()
   expect(screen.getByText('1. Museum')).toBeVisible()
