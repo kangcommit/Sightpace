@@ -58,6 +58,7 @@ export function useTripAutosave({
   draft,
   setDraft,
   canSave,
+  enabled = true,
 }: {
   tripId: string
   initialDraft: TripEditorDraft
@@ -65,6 +66,7 @@ export function useTripAutosave({
   draft: TripEditorDraft
   setDraft: Dispatch<SetStateAction<TripEditorDraft>>
   canSave: boolean
+  enabled?: boolean
 }) {
   const [savedDraft, setSavedDraft] = useState(initialDraft)
   const [status, setStatus] = useState<SaveStatus>('idle')
@@ -75,7 +77,7 @@ export function useTripAutosave({
   const inFlight = useRef(false)
   const revisionRef = useRef(initialRevision)
   const performSaveRef = useRef<(pending: PendingSave) => Promise<void>>(async () => {})
-  const dirty = JSON.stringify(draft) !== JSON.stringify(savedDraft)
+  const dirty = enabled && JSON.stringify(draft) !== JSON.stringify(savedDraft)
 
   async function performSave(pending: PendingSave) {
     if (inFlight.current) return
@@ -132,7 +134,8 @@ export function useTripAutosave({
   performSaveRef.current = performSave
 
   useEffect(() => {
-    if (!dirty || !canSave || needsReload || inFlight.current || pendingSave.current) return
+    if (!enabled || !dirty || !canSave || needsReload || inFlight.current || pendingSave.current)
+      return
     if (status === 'unauthenticated' || status === 'failed' || status === 'conflict') return
 
     const fingerprint = JSON.stringify(draft)
@@ -160,7 +163,7 @@ export function useTripAutosave({
     }, saveDebounceMs)
 
     return () => window.clearTimeout(timer)
-  }, [canSave, dirty, draft, needsReload, status, tripId])
+  }, [canSave, dirty, draft, enabled, needsReload, status, tripId])
 
   useEffect(() => {
     if (status !== 'conflict' || initialRevision === revisionRef.current) return

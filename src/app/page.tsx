@@ -1,32 +1,64 @@
-import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-
 import { buttonVariants } from '@/components/ui/button'
 import { appRoutes } from '@/lib/routes'
+import { requireUser } from '@/lib/session'
 
-export default function Page() {
+export const dynamic = 'force-dynamic'
+
+export default async function Page() {
+  const user = await requireUser().catch(() => null)
+
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col justify-center px-6 py-16">
-      <div className="max-w-2xl space-y-6">
-        <p className="text-muted-foreground text-sm font-medium">Next.js template</p>
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          A solid foundation for your next product.
-        </h1>
-        <p className="text-muted-foreground text-lg leading-relaxed">
-          The App Router, Tailwind CSS, and source-owned UI components are ready to customize.
-        </p>
-        <Link
-          href="https://nextjs.org/docs"
-          className={buttonVariants({ size: 'lg' })}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Your app starts here <ArrowRight aria-hidden="true" data-icon="inline-end" />
+    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-12 px-4 py-8 sm:px-6 sm:py-12">
+      <header className="flex min-h-11 items-center">
+        <Link href={appRoutes.home} className="font-semibold">
+          TrailPlan
         </Link>
-        <Link href={appRoutes.signIn} className="flex min-h-11 w-fit items-center">
-          Sign in to TrailPlan
-        </Link>
-      </div>
+      </header>
+      <section className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
+        <div className="flex flex-col items-start gap-5">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            See what fits into your travel day
+          </h1>
+          <p className="text-muted-foreground max-w-prose leading-relaxed">
+            Plan stops in order, add your own travel estimates, and see how fixed bookings fit.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href={appRoutes.demo} className={buttonVariants({ size: 'lg' })}>
+              Try sample
+            </Link>
+            <Link
+              href={user?.ok ? appRoutes.trips : appRoutes.signIn}
+              className={buttonVariants({ variant: 'outline', size: 'lg' })}
+            >
+              {user?.ok ? 'My trips' : 'Sign in'}
+            </Link>
+          </div>
+        </div>
+        <div className="rounded-xl border p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="font-semibold">A day in Porto</h2>
+            <span className="text-muted-foreground text-sm">Sample</span>
+          </div>
+          <ol className="flex flex-col divide-y">
+            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+              <span>Breakfast</span>
+              <time>09:00–09:45</time>
+            </li>
+            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+              <span>National Museum</span>
+              <time>10:05–11:35</time>
+            </li>
+            <li className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm">
+              <span>Lunch · booked 12:00</span>
+              <time>Arrive 12:05</time>
+            </li>
+          </ol>
+          <p className="text-muted-foreground mt-3 text-sm">
+            A five-minute late arrival is shown before you build your own day.
+          </p>
+        </div>
+      </section>
     </main>
   )
 }
