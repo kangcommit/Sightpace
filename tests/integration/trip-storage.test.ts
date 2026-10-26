@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, expect, inject, it } from 'vitest'
-import { getTrip, listTrips } from '@/features/trips/queries'
+import { getTrip, listTrips } from '@/features/trips/server/queries'
 import { PrismaClient } from '@/generated/prisma/client'
 import { createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
 

@@ -13,7 +13,7 @@ import {
   AlertDialogViewport,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { deleteTripAction } from './actions'
+import { deleteTripAction } from '../server/actions'
 
 function DeleteTripControl({
   tripId,
@@ -72,6 +72,14 @@ export function DeleteTripButton({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
 
+  function handleOpenConfirmation() {
+    setConfirmOpen(true)
+  }
+
+  function handleCloseConfirmation() {
+    setConfirmOpen(false)
+  }
+
   return (
     <>
       <Button
@@ -80,7 +88,7 @@ export function DeleteTripButton({
         size="icon"
         aria-label={`Delete ${title}`}
         className="text-destructive hover:text-destructive min-h-11 min-w-11"
-        onClick={() => setConfirmOpen(true)}
+        onClick={handleOpenConfirmation}
       >
         <Trash2 aria-hidden="true" />
       </Button>
@@ -99,7 +107,7 @@ export function DeleteTripButton({
                 tripId={tripId}
                 revision={revision}
                 mutationId={mutationId}
-                onClose={() => setConfirmOpen(false)}
+                onClose={handleCloseConfirmation}
               />
             </AlertDialogContent>
           </AlertDialogViewport>

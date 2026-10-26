@@ -25,8 +25,12 @@ vi.mock('@/lib/trip-transactions', () => ({
   deleteTrip: mocks.deleteTrip,
 }))
 
-import { type CreateTripState, createTripAction, deleteTripAction } from '@/features/trips/actions'
-import { todayDate } from '@/features/trips/date-rules'
+import {
+  type CreateTripState,
+  createTripAction,
+  deleteTripAction,
+} from '@/features/trips/server/actions'
+import { todayDate } from '@/features/trips/shared/date-rules'
 
 const initial: CreateTripState = {
   values: {
