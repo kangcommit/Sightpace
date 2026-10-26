@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -41,8 +42,8 @@ export function TripEditorDayFields({
   }
 
   return (
-    <>
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="flex flex-col gap-3 md:flex-row md:items-end">
+      <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-3">
         <Field>
           <FieldLabel htmlFor="day-date">Day date</FieldLabel>
           <Input
@@ -102,9 +103,15 @@ export function TripEditorDayFields({
           ) : null}
         </Field>
       </div>
-      <Button variant="outline" className="min-h-11 self-start" onClick={onDelete}>
-        Delete day
+      <Button
+        type="button"
+        variant="destructive"
+        className="min-h-11 min-w-11 self-start md:self-end"
+        aria-label="Delete day"
+        onClick={onDelete}
+      >
+        <Trash2 aria-hidden="true" />
       </Button>
-    </>
+    </div>
   )
 }
