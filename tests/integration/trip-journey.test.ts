@@ -101,6 +101,21 @@ async function waitForApp() {
   throw new Error(`Trip browser-test server did not become ready. ${safeOutput()}`)
 }
 
+async function waitForTripRevision(userId: string, title: string, revision: number) {
+  await expect
+    .poll(
+      async () =>
+        (
+          await db.trip.findFirst({
+            where: { userId, title },
+            select: { revision: true },
+          })
+        )?.revision,
+      { timeout: 20_000 },
+    )
+    .toBe(revision)
+}
+
 function safeOutput() {
   return serverOutput
     .replaceAll(databaseUrl, '[disposable database URL]')
@@ -266,16 +281,16 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   const orderedActivities = await firstPage.locator('ol > li').allTextContents()
   await firstPage.getByLabel('Travel minutes: Lunch to Museum').fill('0')
   await firstPage.getByRole('button', { name: 'Set estimate' }).click()
-  await firstPage.getByRole('status').filter({ hasText: 'Unsaved changes' }).waitFor()
+  await waitForTripRevision(userId, tripTitle, 2)
   await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
   await firstPage.reload()
   await firstPage.getByRole('listitem').first().waitFor({ state: 'visible' })
-  const museum = firstPage.getByRole('button', { name: 'Edit Museum' })
+  const museum = firstPage.getByRole('button', { name: 'Edit Museum', exact: true })
   await museum.click()
   const editDialog = firstPage.getByRole('dialog')
   await editDialog.getByLabel('Name').fill('Updated museum')
   await editDialog.getByRole('button', { name: 'Save activity' }).click()
-  await firstPage.getByRole('status').filter({ hasText: 'Unsaved changes' }).waitFor()
+  await waitForTripRevision(userId, tripTitle, 3)
   await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
   await firstPage.reload()
   await firstPage.getByRole('listitem').first().waitFor({ state: 'visible' })
