@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { PrivatePageHeader } from '@/components/auth/private-page-header'
 import { PrivateSession } from '@/components/auth/private-session'
 import { CreateTripForm } from '@/features/trips/forms/create-trip-form'
 import { todayDate } from '@/features/trips/shared/date-rules'
@@ -21,10 +21,8 @@ export default async function NewTripPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6">
-      <Link href={appRoutes.trips} className="flex min-h-11 items-center font-semibold">
-        TrailPlan
-      </Link>
       <PrivateSession userId={user.data.id}>
+        <PrivatePageHeader href={appRoutes.trips} />
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold">Create a trip</h1>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { PrivatePageHeader } from '@/components/auth/private-page-header'
 import { PrivateSession } from '@/components/auth/private-session'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -26,10 +27,8 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href={appRoutes.trips} className="flex min-h-11 items-center font-semibold">
-        TrailPlan
-      </Link>
       <PrivateSession userId={user.data.id}>
+        <PrivatePageHeader href={appRoutes.trips} />
         {!result.ok ? (
           <section className="flex flex-col items-start gap-4">
             <h1 className="text-2xl font-semibold">We couldn’t open this trip</h1>

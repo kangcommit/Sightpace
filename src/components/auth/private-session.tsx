@@ -2,7 +2,7 @@
 
 import { LoaderCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,6 +10,26 @@ import { authClient } from '@/lib/auth-client'
 import { signInPath } from '@/lib/auth-redirect'
 import { clearPrivateStorage, preparePrivateStorage } from '@/lib/private-storage'
 import { appRoutes } from '@/lib/routes'
+
+const PrivateSignOutContext = createContext<(() => Promise<void>) | null>(null)
+
+export function PrivateSignOutButton() {
+  const signOut = useContext(PrivateSignOutContext)
+
+  if (!signOut) throw new Error('PrivateSignOutButton must be rendered inside PrivateSession.')
+
+  const signOutAction = signOut
+
+  async function handleSignOut() {
+    await signOutAction()
+  }
+
+  return (
+    <Button variant="outline" className="min-h-11" onClick={handleSignOut}>
+      Sign out
+    </Button>
+  )
+}
 
 function PrivateSessionLoading() {
   return (
@@ -209,5 +229,5 @@ export function PrivateSession({
 
   if (!ready) return <PrivateSessionLoading />
 
-  return <>{children}</>
+  return <PrivateSignOutContext.Provider value={signOut}>{children}</PrivateSignOutContext.Provider>
 }
