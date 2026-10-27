@@ -45,7 +45,7 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
         ) : (
           <article className="flex flex-col gap-8">
             <TripEditor
-              key={result.data.revision}
+              key={result.data.id}
               trip={{
                 id: result.data.id,
                 title: result.data.title,
