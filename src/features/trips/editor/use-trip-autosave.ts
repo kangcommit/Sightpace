@@ -75,6 +75,7 @@ export function useTripAutosave({
   const pendingSave = useRef<PendingSave | null>(null)
   const blockedSnapshot = useRef<string | null>(null)
   const inFlight = useRef(false)
+  const debounceTimer = useRef<number | null>(null)
   const revisionRef = useRef(initialRevision)
   const performSaveRef = useRef<(pending: PendingSave) => Promise<void>>(async () => {})
   const dirty = enabled && JSON.stringify(draft) !== JSON.stringify(savedDraft)
@@ -149,6 +150,7 @@ export function useTripAutosave({
     }
 
     const timer = window.setTimeout(() => {
+      debounceTimer.current = null
       const pending: PendingSave = {
         request: {
           tripId,
@@ -161,8 +163,12 @@ export function useTripAutosave({
       pendingSave.current = pending
       void performSaveRef.current(pending)
     }, saveDebounceMs)
+    debounceTimer.current = timer
 
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      if (debounceTimer.current === timer) debounceTimer.current = null
+    }
   }, [canSave, dirty, draft, enabled, needsReload, status, tripId])
 
   useEffect(() => {
@@ -183,11 +189,54 @@ export function useTripAutosave({
     void performSaveRef.current(pendingSave.current)
   }
 
+  function cancelPendingSave() {
+    if (inFlight.current) return false
+
+    if (debounceTimer.current !== null) {
+      window.clearTimeout(debounceTimer.current)
+      debounceTimer.current = null
+    }
+    pendingSave.current = null
+    return true
+  }
+
+  function saveNow() {
+    if (!enabled || !canSave || needsReload || inFlight.current) return false
+
+    if (pendingSave.current) {
+      void performSaveRef.current(pendingSave.current)
+      return true
+    }
+
+    if (!dirty) return false
+
+    if (debounceTimer.current !== null) {
+      window.clearTimeout(debounceTimer.current)
+      debounceTimer.current = null
+    }
+
+    const pending: PendingSave = {
+      request: {
+        tripId,
+        mutationId: crypto.randomUUID(),
+        expectedRevision: revisionRef.current,
+        snapshot: normalizedDraft(draft),
+      },
+      sourceDraft: draft,
+    }
+    pendingSave.current = pending
+    void performSaveRef.current(pending)
+    return true
+  }
+
   return {
     dirty,
     error,
     needsReload,
+    cancelPendingSave,
     retrySave,
+    saveNow,
+    revision: revisionRef.current,
     status,
   }
 }
