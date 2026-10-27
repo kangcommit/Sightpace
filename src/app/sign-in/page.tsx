@@ -6,7 +6,7 @@ import { safeReturnPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Sign in | TrailPlan' }
+export const metadata: Metadata = { title: 'Sign in' }
 export const dynamic = 'force-dynamic'
 
 export default async function SignInPage({

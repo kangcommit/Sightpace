@@ -6,10 +6,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Next.js Frontend Template',
-    template: '%s | Next.js Frontend Template',
+    default: 'TrailPlan — Travel day planner',
+    template: '%s | TrailPlan',
   },
-  description: 'A production-ready Next.js application baseline.',
+  description: 'Plan stops in order, add travel estimates, and see how fixed bookings fit.',
 }
 
 export const viewport: Viewport = {

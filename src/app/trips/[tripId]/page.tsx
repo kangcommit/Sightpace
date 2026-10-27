@@ -11,7 +11,7 @@ import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Trip | TrailPlan' }
+export const metadata: Metadata = { title: 'Trip' }
 export const dynamic = 'force-dynamic'
 
 export default async function TripPage({ params }: { params: Promise<{ tripId: string }> }) {

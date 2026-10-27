@@ -9,7 +9,7 @@ import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Create a trip | TrailPlan' }
+export const metadata: Metadata = { title: 'Create a trip' }
 export const dynamic = 'force-dynamic'
 
 export default async function NewTripPage() {
