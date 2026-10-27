@@ -1,15 +1,20 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { writeTripRecoveryDraft } from '@/features/trips/editor/recovery-storage'
 import { TripEditor } from '@/features/trips/editor/trip-editor'
+import { toDraft } from '@/features/trips/editor/trip-editor-utils'
 import { todayDate } from '@/features/trips/shared/date-rules'
 
-const mocks = vi.hoisted(() => ({ refresh: vi.fn(), save: vi.fn() }))
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))
+const mocks = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), save: vi.fn() }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+}))
 vi.mock('@/features/trips/server/save-trip-action', () => ({ saveTripEditorAction: mocks.save }))
 
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  vi.restoreAllMocks()
   vi.clearAllMocks()
 })
 
@@ -664,18 +669,182 @@ it('retains a conflicting draft and requires a deliberate reload before another 
     message:
       'This trip changed since you opened it. Reload before saving again; your edits are still here.',
   })
-  render(<TripEditor trip={trip} />)
+  render(<TripEditor trip={trip} userId="synthetic-conflict-user" />)
   const name = screen.getByLabelText('Trip name')
-  fireEvent.change(name, { target: { value: 'Local edit' } })
 
   // Act
+  fireEvent.change(name, { target: { value: 'Local edit' } })
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+  const conflictMessage = screen.getByText(/This trip changed since you opened it/).textContent
+  const pausedStatus = screen.getByRole('status').textContent
+  fireEvent.click(screen.getByRole('button', { name: 'Discard edits and reload latest' }))
+  const confirmationRole = screen.getByRole('alertdialog').getAttribute('role')
+  fireEvent.click(screen.getByRole('button', { name: 'Discard and reload latest' }))
+  const refreshRequested = mocks.refresh.mock.calls.length === 1
+
+  // Assert
+  expect(screen.getByRole('button', { name: 'Keep editing locally' })).toBeVisible()
+  expect(name).toHaveValue('Local edit')
+  expect(conflictMessage).toContain('This trip changed since you opened it')
+  expect(pausedStatus).toContain('Saving paused')
+  expect(confirmationRole).toBe('alertdialog')
+  expect(refreshRequested).toBe(true)
+})
+
+it('offers restoration only for the matching server revision and saves after the traveler restores it', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  const userId = 'synthetic-recovery-user'
+  const localDraft = { ...toDraft(trip), title: 'Recovered Lisbon week' }
+  writeTripRecoveryDraft({
+    generationId: 'd0000000-0000-4000-8000-000000000001',
+    userId,
+    tripId: trip.id,
+    baseRevision: trip.revision,
+    draft: localDraft,
+  })
+  render(<TripEditor trip={trip} userId={userId} />)
+
+  // Act
+  fireEvent.click(screen.getByRole('button', { name: 'Restore draft' }))
   await act(async () => vi.advanceTimersByTimeAsync(500))
 
   // Assert
-  expect(screen.getByRole('button', { name: 'Discard edits and reload latest' })).toBeVisible()
-  expect(name).toHaveValue('Local edit')
-  expect(screen.getByText(/This trip changed since you opened it/)).toBeVisible()
-  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
-  fireEvent.click(screen.getByRole('button', { name: 'Discard edits and reload latest' }))
+  expect(screen.getByLabelText('Trip name')).toHaveValue('Recovered Lisbon week')
+  expect(mocks.save).toHaveBeenCalledOnce()
+  expect(localStorage.getItem(`trailplan:private:${userId}:${trip.id}:draft`)).toBeNull()
+})
+
+it('keeps a stale recovery draft local and requires confirmation before discarding it', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  const userId = 'synthetic-recovery-user'
+  const currentTrip = { ...trip, revision: 2 }
+  const localDraft = { ...toDraft(currentTrip), title: 'Older local edit' }
+  writeTripRecoveryDraft({
+    generationId: 'd0000000-0000-4000-8000-000000000002',
+    userId,
+    tripId: trip.id,
+    baseRevision: 1,
+    draft: localDraft,
+  })
+  render(<TripEditor trip={currentTrip} userId={userId} />)
+
+  // Act
+  fireEvent.click(screen.getByRole('button', { name: 'Keep editing locally' }))
+  await act(async () => vi.advanceTimersByTimeAsync(1000))
+  const keptTitle = (screen.getByLabelText('Trip name') as HTMLInputElement).value
+  fireEvent.click(screen.getByRole('button', { name: 'Discard local changes' }))
+  const confirmation = screen.getByRole('alertdialog')
+  fireEvent.click(within(confirmation).getByRole('button', { name: 'Discard and reload latest' }))
+
+  // Assert
+  expect(keptTitle).toBe('Older local edit')
+  expect(screen.getByLabelText('Trip name')).toHaveValue('Lisbon week')
+  expect(screen.getByRole('status')).toHaveTextContent('All changes saved')
+  expect(mocks.save).not.toHaveBeenCalled()
   expect(mocks.refresh).toHaveBeenCalledOnce()
+  expect(localStorage.getItem(`trailplan:private:${userId}:${trip.id}:draft`)).toBeNull()
+})
+
+it('warns when browser storage cannot persist a private recovery draft', () => {
+  // Arrange
+  vi.useFakeTimers()
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('blocked storage')
+  })
+  const userId = 'synthetic-storage-error-user'
+  render(<TripEditor trip={trip} userId={userId} />)
+
+  // Act
+  const name = screen.getByLabelText('Trip name')
+  fireEvent.change(name, { target: { value: 'Keep this edit in memory' } })
+
+  // Assert
+  expect(name).toHaveValue('Keep this edit in memory')
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'This browser couldn’t access its recovery copy.',
+  )
+  expect(mocks.save).not.toHaveBeenCalled()
+})
+
+it('offers save, stay, or discard before an in-app link leaves a dirty private trip', async () => {
+  // Arrange
+  vi.useFakeTimers()
+  const userId = 'synthetic-navigation-user'
+  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  render(
+    <>
+      <a href="/trips">My trips</a>
+      <TripEditor trip={trip} userId={userId} />
+    </>,
+  )
+  const unloadEvent = new Event('beforeunload', { cancelable: true })
+
+  // Act
+  fireEvent.change(screen.getByLabelText('Trip name'), {
+    target: { value: 'Saved before leave' },
+  })
+  window.dispatchEvent(unloadEvent)
+  fireEvent.click(screen.getByRole('link', { name: 'My trips' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save and leave' }))
+  await act(async () => Promise.resolve())
+
+  // Assert
+  expect(unloadEvent.defaultPrevented).toBe(true)
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(mocks.save).toHaveBeenCalledOnce()
+  expect(mocks.push).toHaveBeenCalledWith('/trips')
+  expect(localStorage.getItem(recoveryKey)).toBeNull()
+})
+
+it('keeps the trip and its recovery copy when the traveler stays', () => {
+  // Arrange
+  vi.useFakeTimers()
+  const userId = 'synthetic-navigation-stay-user'
+  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  render(
+    <>
+      <a href="/trips">My trips</a>
+      <TripEditor trip={trip} userId={userId} />
+    </>,
+  )
+
+  // Act
+  fireEvent.change(screen.getByLabelText('Trip name'), {
+    target: { value: 'Stay on this trip' },
+  })
+  fireEvent.click(screen.getByRole('link', { name: 'My trips' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Stay' }))
+
+  // Assert
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Trip name')).toHaveValue('Stay on this trip')
+  expect(mocks.push).not.toHaveBeenCalled()
+  expect(localStorage.getItem(recoveryKey)).not.toBeNull()
+})
+
+it('cancels a pending debounce and clears the local copy when the traveler discards before leaving', () => {
+  // Arrange
+  vi.useFakeTimers()
+  const userId = 'synthetic-navigation-user'
+  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  render(
+    <>
+      <a href="/trips">My trips</a>
+      <TripEditor trip={trip} userId={userId} />
+    </>,
+  )
+
+  // Act
+  fireEvent.change(screen.getByLabelText('Trip name'), {
+    target: { value: 'Discard before leave' },
+  })
+  fireEvent.click(screen.getByRole('link', { name: 'My trips' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Discard and leave' }))
+
+  // Assert
+  expect(mocks.save).not.toHaveBeenCalled()
+  expect(mocks.push).toHaveBeenCalledWith('/trips')
+  expect(localStorage.getItem(recoveryKey)).toBeNull()
 })

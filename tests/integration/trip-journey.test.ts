@@ -116,6 +116,26 @@ async function waitForTripRevision(userId: string, title: string, revision: numb
     .toBe(revision)
 }
 
+async function readTripRevision(userId: string, title: string) {
+  return (
+    await db.trip.findFirst({
+      where: { userId, title },
+      select: { revision: true },
+    })
+  )?.revision
+}
+
+async function waitForTripRevisionAfter(userId: string, title: string, revision: number) {
+  await expect
+    .poll(() => readTripRevision(userId, title), { timeout: 20_000 })
+    .toBeGreaterThan(revision)
+  const savedRevision = await readTripRevision(userId, title)
+
+  if (savedRevision === undefined) throw new Error('The saved trip revision could not be read.')
+
+  return savedRevision
+}
+
 function safeOutput() {
   return serverOutput
     .replaceAll(databaseUrl, '[disposable database URL]')
@@ -224,6 +244,7 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   const firstContext = await browser.newContext({ baseURL: origin, storageState })
   const firstPage = await firstContext.newPage()
   const tripTitle = 'Synthetic Lisbon weekend'
+  const updatedTitle = `${tripTitle} and Porto`
   const destination = 'Lisbon, Portugal'
   const date = new Date().toISOString().slice(0, 10)
 
@@ -281,8 +302,17 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   const orderedActivities = await firstPage.locator('ol > li').allTextContents()
   await firstPage.getByLabel('Travel minutes: Lunch to Museum').fill('0')
   await firstPage.getByRole('button', { name: 'Set estimate' }).click()
-  await waitForTripRevision(userId, tripTitle, 2)
+  let savedRevision = await waitForTripRevisionAfter(userId, tripTitle, 1)
   await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, tripTitle)) ?? savedRevision
+  const tripName = firstPage.getByLabel('Trip name')
+  await tripName.fill(updatedTitle)
+  savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, updatedTitle)) ?? savedRevision
+  const tripNameRemainedFocused = await tripName.evaluate(
+    (input) => input === document.activeElement,
+  )
   await firstPage.reload()
   await firstPage.getByRole('listitem').first().waitFor({ state: 'visible' })
   const museum = firstPage.getByRole('button', { name: 'Edit Museum', exact: true })
@@ -290,8 +320,74 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   const editDialog = firstPage.getByRole('dialog')
   await editDialog.getByLabel('Name').fill('Updated museum')
   await editDialog.getByRole('button', { name: 'Save activity' }).click()
-  await waitForTripRevision(userId, tripTitle, 3)
+  savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
   await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, updatedTitle)) ?? savedRevision
+  const secondDayDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+  await firstPage.getByRole('button', { name: 'Add another day' }).click()
+  await firstPage.getByLabel('New day date').fill(secondDayDate)
+  await firstPage.getByLabel('Starts at', { exact: true }).fill('09:00')
+  await firstPage.getByLabel('Finishes at', { exact: true }).fill('18:00')
+  await firstPage.getByRole('button', { name: 'Add day', exact: true }).click()
+  savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, updatedTitle)) ?? savedRevision
+  const dayTwo = firstPage
+    .getByRole('navigation', { name: 'Trip days' })
+    .getByRole('button', { name: /Day 2 ·/ })
+  const selectedAfterCreatingDay = await dayTwo.getAttribute('aria-pressed')
+  expect(selectedAfterCreatingDay).toBe('true')
+
+  await firstPage.getByRole('button', { name: 'Add activity' }).click()
+  await firstPage.getByRole('dialog').getByLabel('Name').fill('Second-day stop')
+  await firstPage.getByRole('dialog').getByLabel('Duration (minutes)').fill('45')
+  await firstPage.getByRole('dialog').getByRole('button', { name: 'Add activity' }).click()
+  try {
+    savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
+  } catch {
+    throw new Error(
+      `Second-day activity was not persisted: ${JSON.stringify({
+        status: await firstPage.getByRole('status').allTextContents(),
+        alerts: await firstPage.getByRole('alert').allTextContents(),
+        selectedDay: await dayTwo.getAttribute('aria-pressed'),
+        content: await firstPage.locator('main').textContent(),
+      })}`,
+    )
+  }
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, updatedTitle)) ?? savedRevision
+  const selectedAfterCreatingActivity = await dayTwo.getAttribute('aria-pressed')
+
+  await firstPage.getByRole('button', { name: 'Edit Second-day stop', exact: true }).click()
+  await firstPage.getByRole('dialog').getByLabel('Name').fill('Edited second-day stop')
+  await firstPage.getByRole('dialog').getByRole('button', { name: 'Save activity' }).click()
+  savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  savedRevision = (await readTripRevision(userId, updatedTitle)) ?? savedRevision
+  const selectedAfterUpdatingActivity = await dayTwo.getAttribute('aria-pressed')
+
+  await firstPage
+    .getByRole('button', { name: 'Delete Edited second-day stop', exact: true })
+    .click()
+  await firstPage
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Delete', exact: true })
+    .click()
+  savedRevision = await waitForTripRevisionAfter(userId, updatedTitle, savedRevision)
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+  const selectedAfterDeletingActivity = await dayTwo.getAttribute('aria-pressed')
+  const dayDate = firstPage.getByLabel('Day date', { exact: true })
+  await dayDate.fill('')
+  await firstPage.getByText('Enter a valid day date.').waitFor()
+  const dayDateBox = await dayDate.boundingBox()
+  const deleteDayBox = await firstPage.getByRole('button', { name: 'Delete day' }).boundingBox()
+  if (!dayDateBox || !deleteDayBox) throw new Error('Day date or delete button is not visible.')
+  const deleteDayVerticalOffset = Math.abs(deleteDayBox.y - dayDateBox.y)
+  const invalidDayDateMessage = firstPage.getByText('Enter a valid day date.')
+  await dayDate.fill(secondDayDate)
+  await invalidDayDateMessage.waitFor({ state: 'hidden' })
+  await firstPage.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+
   await firstPage.reload()
   await firstPage.getByRole('listitem').first().waitFor({ state: 'visible' })
   const persistedActivities = await firstPage.locator('ol > li').allTextContents()
@@ -302,18 +398,18 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   }))
 
   await firstPage.reload()
-  const reloadedHeading = await firstPage.getByRole('heading', { name: tripTitle }).textContent()
+  const reloadedHeading = await firstPage.getByRole('heading', { name: updatedTitle }).textContent()
 
   const secondContext = await browser.newContext({ baseURL: origin, storageState })
   const secondPage = await secondContext.newPage()
   await secondPage.goto('/trips')
-  const listedHeading = await secondPage.getByRole('heading', { name: tripTitle }).textContent()
+  const listedHeading = await secondPage.getByRole('heading', { name: updatedTitle }).textContent()
   const listedDestination = await secondPage.getByText(destination).textContent()
   await secondPage.goto(new URL(createdUrl).pathname)
   await secondPage.reload()
   const secondContextUrl = secondPage.url()
   const secondContextHeading = await secondPage
-    .getByRole('heading', { name: tripTitle })
+    .getByRole('heading', { name: updatedTitle })
     .textContent()
 
   await secondPage.goto('/trips')
@@ -334,21 +430,129 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
   expect(createdDestination).toBe(destination)
   expect(createdDayStart).toBe('09:00')
   expect(createdDayFinish).toBe('18:00')
+  expect(tripNameRemainedFocused).toBe(true)
+  expect(selectedAfterCreatingActivity).toBe('true')
+  expect(selectedAfterUpdatingActivity).toBe('true')
+  expect(selectedAfterDeletingActivity).toBe('true')
+  expect(deleteDayVerticalOffset).toBeLessThanOrEqual(4)
   expect(orderedActivities[0]).toContain('Lunch')
   expect(orderedActivities[1]).toContain('Museum')
   expect(persistedActivities[0]).toContain('Lunch')
   expect(persistedActivities[1]).toContain('Updated museum')
   expect(mobileWidth.content).toBeLessThanOrEqual(mobileWidth.viewport)
-  expect(reloadedHeading).toBe(tripTitle)
-  expect(listedHeading).toBe(tripTitle)
+  expect(reloadedHeading).toBe(updatedTitle)
+  expect(listedHeading).toBe(updatedTitle)
   expect(listedDestination).toBe(destination)
   expect(secondContextUrl).toBe(createdUrl)
-  expect(secondContextHeading).toBe(tripTitle)
+  expect(secondContextHeading).toBe(updatedTitle)
   expect(confirmationVisible).toBe(true)
   expect(deletedEmptyState).toBe('Plan your first trip')
 
   await firstContext.close()
   await secondContext.close()
+}, 120_000)
+
+it('restores a same-revision draft after reload and keeps a stale draft from overwriting newer data', async () => {
+  // Arrange
+  if (!browser) browser = await chromium.launch({ headless: true })
+  if (!userId) throw new Error('Synthetic browser-test identity was not initialized.')
+  const storageState = {
+    cookies: sessionCookies.map((cookie) => ({
+      ...cookie,
+      httpOnly: cookie.httpOnly ?? true,
+      secure: cookie.secure ?? false,
+      sameSite: cookie.sameSite ?? 'Lax',
+      expires: cookie.expires ?? -1,
+    })),
+    origins: [
+      {
+        origin,
+        localStorage: [{ name: 'trailplan:private:owner', value: userId }],
+      },
+    ],
+  }
+  const context = await browser.newContext({ baseURL: origin, storageState })
+  const page = await context.newPage()
+  const initialTitle = `Synthetic recovery ${randomUUID()}`
+  const restoredTitle = `${initialTitle} restored`
+  const staleTitle = `${initialTitle} local stale`
+  const serverTitle = `${initialTitle} latest server version`
+  const date = new Date().toISOString().slice(0, 10)
+  const recoveryKey = `trailplan:private:${userId}:`
+
+  // Act
+  await page.goto('/trips/new')
+  await page.getByLabel('Trip name').fill(initialTitle)
+  await page.getByLabel('Destination label').fill('Synthetic recovery destination')
+  await page.getByLabel('First day date').fill(date)
+  await page.getByLabel('Day starts at').fill('09:00')
+  await page.getByLabel('Day finishes at').fill('18:00')
+  await page.getByRole('button', { name: 'Create trip' }).click()
+  await page.waitForURL(/\/trips\/[0-9a-f-]+$/)
+  const tripId = new URL(page.url()).pathname.split('/').at(-1)
+  if (!tripId) throw new Error('The recovery journey did not create a trip ID.')
+  const tripRecoveryKey = `${recoveryKey}${tripId}:draft`
+
+  await page.getByLabel('Trip name').fill(restoredTitle)
+  await page.waitForFunction(
+    ({ key, title }) => {
+      const serialized = localStorage.getItem(key)
+      return serialized ? JSON.parse(serialized).draft.title === title : false
+    },
+    { key: tripRecoveryKey, title: restoredTitle },
+  )
+  await page.reload()
+  await page.getByRole('button', { name: 'Restore draft' }).click()
+  await waitForTripRevision(userId, restoredTitle, 2)
+  await page.getByRole('status').filter({ hasText: 'All changes saved' }).waitFor()
+
+  await page.getByLabel('Trip name').fill(staleTitle)
+  await page.getByLabel('Destination label').fill('')
+  await page.waitForFunction(
+    ({ key, title }) => {
+      const serialized = localStorage.getItem(key)
+      if (!serialized) return false
+
+      const record = JSON.parse(serialized)
+      return record.draft.title === title && record.baseRevision === 2
+    },
+    { key: tripRecoveryKey, title: staleTitle },
+  )
+  await db.trip.updateMany({
+    where: { id: tripId, userId },
+    data: { title: serverTitle, revision: { increment: 1 } },
+  })
+  await page.reload()
+  await page.getByRole('button', { name: 'Keep editing locally' }).click()
+  const keptLocalTitle = await page.getByLabel('Trip name').inputValue()
+  await page.waitForTimeout(750)
+  const tripBeforeDiscard = await db.trip.findFirstOrThrow({
+    where: { id: tripId, userId },
+    select: { title: true, revision: true },
+  })
+  await page.getByRole('button', { name: 'Discard local changes' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Discard and reload latest' })
+    .click()
+  const latestHeading = await page.getByRole('heading', { name: serverTitle }).textContent()
+  const tripAfterDiscard = await db.trip.findFirstOrThrow({
+    where: { id: tripId, userId },
+    select: { title: true, revision: true },
+  })
+  const recoveryAfterDiscard = await page.evaluate(
+    (key) => localStorage.getItem(key),
+    tripRecoveryKey,
+  )
+  await db.trip.deleteMany({ where: { id: tripId, userId } })
+  await context.close()
+
+  // Assert
+  expect(keptLocalTitle).toBe(staleTitle)
+  expect(tripBeforeDiscard).toEqual({ title: serverTitle, revision: 3 })
+  expect(latestHeading).toBe(serverTitle)
+  expect(tripAfterDiscard).toEqual(tripBeforeDiscard)
+  expect(recoveryAfterDiscard).toBeNull()
 }, 120_000)
 
 it('edits the public sample, confirms reset, preserves sign-in return data, and saves one owned copy', async () => {
