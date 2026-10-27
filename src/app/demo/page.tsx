@@ -4,7 +4,7 @@ import { SamplePlanner } from '@/features/trips/sample/sample-planner'
 import { todayDate } from '@/features/trips/shared/date-rules'
 import { requireUser } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Try the sample | TrailPlan' }
+export const metadata: Metadata = { title: 'Try the sample' }
 export const dynamic = 'force-dynamic'
 
 export default async function DemoPage() {

@@ -19,7 +19,7 @@ import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'My trips | TrailPlan' }
+export const metadata: Metadata = { title: 'My trips' }
 export const dynamic = 'force-dynamic'
 
 function displayDate(value: string) {
