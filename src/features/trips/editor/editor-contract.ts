@@ -4,44 +4,55 @@ import { isDateTodayOrLater } from '../shared/date-rules'
 const minute = z.number().int()
 const uuid = z.uuid().optional()
 
-export const tripEditorDraftSchema = z
-  .strictObject({
-    title: z.string().trim().min(1).max(120),
-    destination: z.string().trim().min(1).max(120),
-    days: z
-      .array(
-        z.strictObject({
-          key: z.string().min(1).max(80),
-          id: uuid,
-          date: z.iso.date().refine(isDateTodayOrLater, 'Choose today or a future date.'),
-          startMinute: minute.min(0).max(1438),
-          finishMinute: minute.min(1).max(1439),
-          activities: z
-            .array(
-              z.strictObject({
-                key: z.string().min(1).max(80),
-                id: uuid,
-                title: z.string().trim().min(1).max(120),
-                placeLabel: z.string().trim().max(200),
-                durationMinutes: minute.min(1).max(1439),
-                fixedStartMinute: minute.min(0).max(1439).nullable(),
-              }),
-            )
-            .max(100),
-          travelEstimates: z
-            .array(
-              z.strictObject({
-                fromKey: z.string().min(1).max(80),
-                toKey: z.string().min(1).max(80),
-                minutes: minute.min(0).max(1439),
-              }),
-            )
-            .max(1000),
-        }),
-      )
-      .max(30),
-  })
+export const tripEditorRecoveryDraftSchema = z.strictObject({
+  title: z.string().max(120),
+  destination: z.string().max(120),
+  days: z
+    .array(
+      z.strictObject({
+        key: z.string().min(1).max(80),
+        id: uuid,
+        date: z.union([z.iso.date(), z.literal('')]),
+        startMinute: minute.min(0).max(1439),
+        finishMinute: minute.min(0).max(1439),
+        activities: z
+          .array(
+            z.strictObject({
+              key: z.string().min(1).max(80),
+              id: uuid,
+              title: z.string().max(120),
+              placeLabel: z.string().max(200),
+              durationMinutes: minute.min(1).max(1439),
+              fixedStartMinute: minute.min(0).max(1439).nullable(),
+            }),
+          )
+          .max(100),
+        travelEstimates: z
+          .array(
+            z.strictObject({
+              fromKey: z.string().min(1).max(80),
+              toKey: z.string().min(1).max(80),
+              minutes: minute.min(0).max(1439),
+            }),
+          )
+          .max(1000),
+      }),
+    )
+    .max(30),
+})
+
+export const tripEditorDraftSchema = tripEditorRecoveryDraftSchema
   .superRefine((draft, context) => {
+    if (draft.title.trim().length === 0)
+      context.addIssue({ code: 'custom', path: ['title'], message: 'Enter a trip name.' })
+
+    if (draft.destination.trim().length === 0)
+      context.addIssue({
+        code: 'custom',
+        path: ['destination'],
+        message: 'Enter a destination label.',
+      })
+
     const dates = new Set<string>()
     const dayIds = new Set<string>()
     const activityIds = new Set<string>()
@@ -63,8 +74,22 @@ export const tripEditorDraftSchema = z
       allKeys.add(day.key)
       if (day.id) dayIds.add(day.id)
 
+      if (!isDateTodayOrLater(day.date))
+        context.addIssue({
+          code: 'custom',
+          path: ['days', dayIndex, 'date'],
+          message: 'Choose today or a future date.',
+        })
+
       const keys = new Set<string>()
-      for (const activity of day.activities) {
+      for (const [activityIndex, activity] of day.activities.entries()) {
+        if (activity.title.trim().length === 0)
+          context.addIssue({
+            code: 'custom',
+            path: ['days', dayIndex, 'activities', activityIndex, 'title'],
+            message: 'Enter an activity name.',
+          })
+
         if (
           keys.has(activity.key) ||
           allKeys.has(activity.key) ||
@@ -98,5 +123,18 @@ export const tripEditorDraftSchema = z
       }
     }
   })
+  .transform((draft) => ({
+    ...draft,
+    title: draft.title.trim(),
+    destination: draft.destination.trim(),
+    days: draft.days.map((day) => ({
+      ...day,
+      activities: day.activities.map((activity) => ({
+        ...activity,
+        title: activity.title.trim(),
+        placeLabel: activity.placeLabel.trim(),
+      })),
+    })),
+  }))
 
-export type TripEditorDraft = z.infer<typeof tripEditorDraftSchema>
+export type TripEditorDraft = z.infer<typeof tripEditorRecoveryDraftSchema>
