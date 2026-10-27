@@ -106,7 +106,7 @@ export function TripEditorDayFields({
       <Button
         type="button"
         variant="destructive"
-        className="min-h-11 min-w-11 self-start md:self-end"
+        className="min-h-11 min-w-11 self-start md:mt-7"
         aria-label="Delete day"
         onClick={onDelete}
       >
