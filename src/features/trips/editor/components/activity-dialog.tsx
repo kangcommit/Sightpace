@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { EditorActivity } from '../trip-editor-utils'
 import { fromTime, toTime } from '../trip-editor-utils'
 
@@ -90,12 +91,19 @@ export function ActivityDialog({
       <DialogContent initialFocus={nameRef}>
         <div className="flex items-center justify-between gap-3">
           <DialogTitle>{current ? 'Edit activity' : 'Add activity'}</DialogTitle>
-          <DialogClose
-            aria-label="Close activity editor"
-            className="focus-visible:ring-ring focus-visible:ring-3"
-          >
-            <X aria-hidden="true" className="size-5" />
-          </DialogClose>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <DialogClose
+                  aria-label="Close activity editor"
+                  className="focus-visible:ring-ring focus-visible:ring-3"
+                />
+              }
+            >
+              <X aria-hidden="true" className="size-5" />
+            </TooltipTrigger>
+            <TooltipContent side="left">Close activity editor</TooltipContent>
+          </Tooltip>
         </div>
         <DialogDescription>
           Enter the stop details. The schedule updates when you add or edit the activity.

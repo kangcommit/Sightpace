@@ -1,10 +1,14 @@
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DayScheduleResult } from '@/lib/scheduling'
 import type { EditorActivity, EditorDay } from '../trip-editor-utils'
 import { formatTime, toTime } from '../trip-editor-utils'
@@ -39,7 +43,14 @@ export function TripEditorActivities({
         </Button>
       </div>
       {day.activities.length === 0 ? (
-        <p className="text-muted-foreground">No activities yet. Add your first activity.</p>
+        <Empty className="flex-none items-start justify-start gap-1 rounded-none p-0 text-left">
+          <EmptyHeader className="items-start gap-1">
+            <EmptyTitle role="heading" aria-level={4}>
+              No activities yet
+            </EmptyTitle>
+            <EmptyDescription>Add your first stop to start planning this day.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : null}
       <ol className="flex flex-col gap-4">
         {day.activities.map((activity, index) => (
@@ -136,48 +147,86 @@ function ActivityItem({
             </p>
           ) : null}
           {entry?.provisional ? (
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              Provisional: earlier travel time is missing.
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-amber-800 dark:text-amber-200">
+              <Badge
+                variant="outline"
+                className="border-amber-700/40 bg-amber-50 text-amber-900 dark:border-amber-300/40 dark:bg-amber-950/40 dark:text-amber-100"
+              >
+                Provisional
+              </Badge>
+              <span>Earlier travel time is missing.</span>
             </p>
           ) : null}
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            className="min-h-11 min-w-11"
-            aria-label={`Move ${activity.title} up`}
-            disabled={index === 0}
-            onClick={handleMoveUp}
-          >
-            <ArrowUp aria-hidden="true" />
-          </Button>
-          <Button
-            variant="outline"
-            className="min-h-11 min-w-11"
-            aria-label={`Move ${activity.title} down`}
-            disabled={index === day.activities.length - 1}
-            onClick={handleMoveDown}
-          >
-            <ArrowDown aria-hidden="true" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-lg"
-            className="min-h-11 min-w-11"
-            aria-label={`Edit ${activity.title}`}
-            onClick={handleEdit}
-          >
-            <Pencil aria-hidden="true" />
-          </Button>
-          <Button
-            variant="destructive"
-            className="min-h-11 min-w-11"
-            aria-label={`Delete ${activity.title}`}
-            onClick={handleDelete}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-        </div>
+        <ButtonGroup aria-label={`Actions for ${activity.title}`} className="shrink-0">
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 min-w-11"
+                  aria-label={`Move ${activity.title} up`}
+                  disabled={index === 0}
+                  onClick={handleMoveUp}
+                />
+              }
+            >
+              <ArrowUp aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Move {activity.title} up</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 min-w-11"
+                  aria-label={`Move ${activity.title} down`}
+                  disabled={index === day.activities.length - 1}
+                  onClick={handleMoveDown}
+                />
+              }
+            >
+              <ArrowDown aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Move {activity.title} down</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-lg"
+                  className="min-h-11 min-w-11"
+                  aria-label={`Edit ${activity.title}`}
+                  onClick={handleEdit}
+                />
+              }
+            >
+              <Pencil aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Edit {activity.title}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="min-h-11 min-w-11"
+                  aria-label={`Delete ${activity.title}`}
+                  onClick={handleDelete}
+                />
+              }
+            >
+              <Trash2 aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Delete {activity.title}</TooltipContent>
+          </Tooltip>
+        </ButtonGroup>
       </div>
       {nextActivity ? (
         <TravelControl

@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { isDateTodayOrLater } from '../../shared/date-rules'
 import type { EditorDay } from '../trip-editor-utils'
 import { fromTime, toTime, validDate } from '../trip-editor-utils'
@@ -103,15 +104,22 @@ export function TripEditorDayFields({
           ) : null}
         </Field>
       </div>
-      <Button
-        type="button"
-        variant="destructive"
-        className="min-h-11 min-w-11 self-start md:mt-7"
-        aria-label="Delete day"
-        onClick={onDelete}
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-h-11 min-w-11 self-start md:mt-7"
+              aria-label="Delete day"
+              onClick={onDelete}
+            />
+          }
+        >
+          <Trash2 aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent>Delete day</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 
 import { ThemeProvider } from '@/components/theme-provider'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 import './globals.css'
 
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TooltipProvider delay={500}>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
