@@ -1,5 +1,7 @@
 import type { MouseEvent } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import type { DayScheduleResult } from '@/lib/scheduling'
 import type { EditorDay } from '../trip-editor-utils'
 import { formatTime, toTime } from '../trip-editor-utils'
@@ -159,7 +161,16 @@ export function TripEditorTimeline({
         </h3>
       </div>
       {day.activities.length === 0 ? (
-        <p className="text-muted-foreground">No activities yet.</p>
+        <Empty className="flex-none items-start justify-start gap-1 rounded-none p-0 text-left">
+          <EmptyHeader className="items-start gap-1">
+            <EmptyTitle role="heading" aria-level={4}>
+              No activities yet
+            </EmptyTitle>
+            <EmptyDescription>
+              Add a stop from Activities to see it on the timeline.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : null}
       <div className="relative min-w-0" style={{ height: `${timelineHeight}px` }}>
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -249,7 +260,14 @@ export function TripEditorTimeline({
                     min late
                   </span>
                 ) : null}
-                {segment.entry.provisional ? <span>Provisional</span> : null}
+                {segment.entry.provisional ? (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-700/40 bg-amber-50 text-amber-900 dark:border-amber-300/40 dark:bg-amber-950/40 dark:text-amber-100"
+                  >
+                    Provisional
+                  </Badge>
+                ) : null}
               </Button>
             )
           }
@@ -283,7 +301,10 @@ function activityContentHeight(entry: DayScheduleResult['entries'][number]) {
     Number(entry.lateMinutes > 0) +
     Number(entry.provisional)
 
-  return Math.max(minimumActivityHeight, lineCount * 16 + 10 + (lineCount - 1) * 2)
+  return Math.max(
+    minimumActivityHeight,
+    lineCount * 16 + Number(entry.provisional) * 4 + 10 + (lineCount - 1) * 2,
+  )
 }
 
 function activityDescription(

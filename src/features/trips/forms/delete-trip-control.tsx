@@ -13,6 +13,7 @@ import {
   AlertDialogViewport,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { deleteTripAction } from '../server/actions'
 
 function DeleteTripControl({
@@ -82,15 +83,22 @@ export function DeleteTripButton({
 
   return (
     <>
-      <Button
-        variant="destructive"
-        size="icon"
-        aria-label={`Delete ${title}`}
-        className="min-h-11 min-w-11"
-        onClick={handleOpenConfirmation}
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="destructive"
+              size="icon"
+              aria-label={`Delete ${title}`}
+              className="min-h-11 min-w-11"
+              onClick={handleOpenConfirmation}
+            />
+          }
+        >
+          <Trash2 aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent>Delete {title}</TooltipContent>
+      </Tooltip>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogPortal>
           <AlertDialogBackdrop />

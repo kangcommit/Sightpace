@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { MapPinned } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -6,6 +7,22 @@ import { PrivatePageHeader } from '@/components/auth/private-page-header'
 import { PrivateSession } from '@/components/auth/private-session'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/components/ui/item'
 import {
   Pagination,
   PaginationContent,
@@ -75,52 +92,66 @@ export default async function TripsPage({
             </Button>
           </section>
         ) : result.data.items.length === 0 ? (
-          <section className="flex flex-col items-start gap-3">
-            <h2 className="text-lg font-medium">Plan your first trip</h2>
-            <p className="text-muted-foreground">
-              Your saved trips will be private to this account.
-            </p>
-            <Button
-              render={<Link href={appRoutes.newTrip} />}
-              nativeButton={false}
-              className="min-h-11"
-            >
-              Create trip
-            </Button>
-          </section>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MapPinned aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle role="heading" aria-level={2}>
+                Plan your first trip
+              </EmptyTitle>
+              <EmptyDescription>Your saved trips are private to this account.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                render={<Link href={appRoutes.newTrip} />}
+                nativeButton={false}
+                className="min-h-11"
+              >
+                Create trip
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <>
-            <ul className="flex flex-col gap-5">
+            <ItemGroup aria-label="Saved trips" className="gap-5">
               {result.data.items.map((trip) => (
-                <li
-                  key={trip.id}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <Link
-                    className="flex min-h-11 min-w-0 flex-1 flex-col gap-0.5"
-                    href={appRoutes.trip(trip.id)}
-                  >
-                    <h2 className="text-lg font-medium">{trip.title}</h2>
-                    <p className="text-muted-foreground text-sm">{trip.destination}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {trip.startDate && trip.endDate
-                        ? trip.startDate === trip.endDate
-                          ? displayDate(trip.startDate)
-                          : `${displayDate(trip.startDate)} – ${displayDate(trip.endDate)}`
-                        : 'No dates planned yet'}
-                    </p>
-                  </Link>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <DeleteTripButton
-                      tripId={trip.id}
-                      title={trip.title}
-                      revision={trip.revision}
-                      mutationId={randomUUID()}
-                    />
-                  </div>
+                <li key={trip.id} className="m-0 p-0">
+                  <Item className="items-start justify-between gap-4">
+                    <ItemContent className="min-w-0">
+                      <Link
+                        className="focus-visible:ring-ring flex min-h-11 min-w-0 flex-col gap-0.5 rounded-sm hover:opacity-80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        href={appRoutes.trip(trip.id)}
+                      >
+                        <ItemTitle
+                          role="heading"
+                          aria-level={2}
+                          className="line-clamp-none w-full text-lg whitespace-normal"
+                        >
+                          {trip.title}
+                        </ItemTitle>
+                        <ItemDescription className="line-clamp-none">
+                          {trip.destination} ·{' '}
+                          {trip.startDate && trip.endDate
+                            ? trip.startDate === trip.endDate
+                              ? displayDate(trip.startDate)
+                              : `${displayDate(trip.startDate)} – ${displayDate(trip.endDate)}`
+                            : 'No dates planned yet'}
+                        </ItemDescription>
+                      </Link>
+                    </ItemContent>
+                    <ItemActions className="shrink-0 self-start">
+                      <DeleteTripButton
+                        tripId={trip.id}
+                        title={trip.title}
+                        revision={trip.revision}
+                        mutationId={randomUUID()}
+                      />
+                    </ItemActions>
+                  </Item>
                 </li>
               ))}
-            </ul>
+            </ItemGroup>
             {result.data.totalPages > 1 && (
               <Pagination aria-label="Trip pages">
                 <PaginationContent>

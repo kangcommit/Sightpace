@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { writeTripRecoveryDraft } from '@/features/trips/editor/recovery-storage'
 import { TripEditor } from '@/features/trips/editor/trip-editor'
 import { toDraft } from '@/features/trips/editor/trip-editor-utils'
@@ -127,8 +128,54 @@ it('recalculates missing-travel projections and provisional timing immediately',
   expect(lunch).toHaveTextContent('12:00–12:45')
   expect(within(lunch).queryByText(/Booked/)).not.toBeInTheDocument()
   expect(screen.getByText(/travel estimate not set/i)).toBeVisible()
-  expect(screen.getByText('Provisional: earlier travel time is missing.')).toBeVisible()
+  expect(within(lunch).getByText('Provisional')).toBeVisible()
+  expect(within(lunch).getByText('Earlier travel time is missing.')).toBeVisible()
   expect(screen.getByLabelText('Day schedule summary')).toHaveTextContent('12:45')
+})
+
+it('shows an activity empty state with a clear next step', () => {
+  // Arrange
+  const emptyTrip = {
+    ...trip,
+    days: [{ ...trip.days[0], activities: [], travelEstimates: [] }],
+  }
+  render(
+    <TooltipProvider delay={0}>
+      <TripEditor trip={emptyTrip} />
+    </TooltipProvider>,
+  )
+  const activities = screen.getByRole('region', { name: 'Activities' })
+
+  const addActivity = within(activities).getByRole('button', { name: 'Add activity' })
+
+  // Assert
+  expect(within(activities).getByRole('heading', { name: 'No activities yet' })).toBeVisible()
+  expect(
+    within(activities).getByText('Add your first stop to start planning this day.'),
+  ).toBeVisible()
+  expect(addActivity).toBeVisible()
+})
+
+it('groups icon actions with accessible names and tooltip text on focus', () => {
+  // Arrange
+  render(
+    <TooltipProvider delay={0}>
+      <TripEditor trip={trip} />
+    </TooltipProvider>,
+  )
+  const actionGroup = screen.getByRole('group', { name: 'Actions for Museum' })
+
+  // Act
+  const editButton = within(actionGroup).getByRole('button', { name: 'Edit Museum' })
+  fireEvent.focus(editButton)
+
+  // Assert
+  expect(editButton).toBeVisible()
+  expect(screen.getByText('Edit Museum')).toBeInTheDocument()
+  expect(document.querySelector('[data-slot="tooltip-content"][data-open]')).toBeInTheDocument()
+  expect(within(actionGroup).getByRole('button', { name: 'Move Museum up' })).toBeDisabled()
+  expect(within(actionGroup).getByRole('button', { name: 'Move Museum down' })).toBeEnabled()
+  expect(within(actionGroup).getByRole('button', { name: 'Delete Museum' })).toBeEnabled()
 })
 
 it('shows a late booking separately from projected attendance', () => {
