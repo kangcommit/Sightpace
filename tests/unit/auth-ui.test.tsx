@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GoogleSignIn } from '@/components/auth/google-sign-in'
+import { PrivatePageHeader } from '@/components/auth/private-page-header'
 import { PrivateSession } from '@/components/auth/private-session'
 import { clearPrivateStorage, preparePrivateStorage } from '@/lib/private-storage'
 
@@ -107,18 +108,26 @@ describe('Google sign-in', () => {
 })
 
 describe('private browser data and sign-out', () => {
-  it('does not append a sign-out button to private page content', async () => {
+  it('shows a header sign-out action that clears private drafts before revoking the session', async () => {
     // Arrange
+    preparePrivateStorage('a')
+    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    mocks.signOut.mockImplementationOnce(() => new Promise(() => {}))
     render(
       <PrivateSession userId="a">
+        <PrivatePageHeader href="/trips" />
         <p>Private itinerary</p>
       </PrivateSession>,
     )
+    const signOut = await screen.findByRole('button', { name: 'Sign out' })
 
     // Act
-    await screen.findByText('Private itinerary')
+    fireEvent.click(signOut)
 
     // Assert
+    expect(mocks.signOut).toHaveBeenCalledOnce()
+    expect(localStorage.getItem('trailplan:private:a:trip')).toBeNull()
+    expect(await screen.findByRole('status')).toHaveTextContent('Signing out…')
     expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument()
   })
 
@@ -323,7 +332,9 @@ describe('private browser data and sign-out', () => {
     expect(screen.queryByText('Private itinerary')).not.toBeInTheDocument()
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('still be signed in'))
-    expect(screen.getByRole('heading', { name: 'We couldn’t sign you out' })).toHaveFocus()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'We couldn’t sign you out' })).toHaveFocus(),
+    )
     expect(localStorage.getItem('trailplan:private:a:trip')).toBeNull()
     expect(screen.getByRole('button', { name: 'Retry sign out' })).toBeEnabled()
   })
