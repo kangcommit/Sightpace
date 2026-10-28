@@ -87,6 +87,7 @@ it('shows travel, booking lateness and provisional overrun with review controls'
   render(<TripEditor trip={trip} sampleMode />)
   const timeline = screen.getByRole('tabpanel', { name: 'Timeline' })
   const lunch = within(timeline).getByRole('button', { name: /Edit Lunch/ })
+  const gallery = within(timeline).getByRole('button', { name: /Edit Gallery/ })
   const issueSummary = screen.getByText('Review 3 timing issues')
 
   // Act
@@ -101,6 +102,9 @@ it('shows travel, booking lateness and provisional overrun with review controls'
   expect(within(timeline).getByText('Travel time not set')).toBeVisible()
   expect(lunch).toHaveAccessibleName(
     'Edit Lunch; projected 10:30 to 11:15; 45 minutes; booked 10:00; arrive 10:30, 30 minutes late',
+  )
+  expect(gallery).toHaveAccessibleName(
+    'Edit Gallery; projected 11:15 to 12:15; 60 minutes; provisional because earlier travel time is missing',
   )
   expect(within(lunch).getByText('Booked 10:00')).toBeVisible()
   expect(within(lunch).getByText('Arrive 10:30 · 30 min late')).toBeVisible()
