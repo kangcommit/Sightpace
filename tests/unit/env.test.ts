@@ -59,6 +59,20 @@ describe('lazy server configuration', () => {
     },
   )
 
+  it('keeps the migration URL out of runtime database configuration', () => {
+    // Arrange
+    const source = {
+      DATABASE_URL: authEnv.DATABASE_URL,
+      DIRECT_URL: 'not-a-runtime-url',
+    }
+
+    // Act
+    const result = getDatabaseEnv(source)
+
+    // Assert
+    expect(result).toEqual({ DATABASE_URL: authEnv.DATABASE_URL })
+  })
+
   it.each([
     undefined,
     '',
