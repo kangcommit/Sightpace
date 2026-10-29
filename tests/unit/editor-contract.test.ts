@@ -152,7 +152,7 @@ it.each([
   expect(parsed.success).toBe(false)
 })
 
-it('rejects a day dated before the current UTC date', () => {
+it('accepts a day dated before the current UTC date', () => {
   // Arrange
   const draft = {
     title: 'Lisbon week',
@@ -173,6 +173,5 @@ it('rejects a day dated before the current UTC date', () => {
   const parsed = tripEditorDraftSchema.safeParse(draft)
 
   // Assert
-  expect(parsed.success).toBe(false)
-  if (!parsed.success) expect(parsed.error.issues[0].message).toBe('Choose today or a future date.')
+  expect(parsed.success).toBe(true)
 })

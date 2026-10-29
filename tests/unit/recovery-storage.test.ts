@@ -8,7 +8,7 @@ import {
 const userId = 'synthetic-user'
 const tripId = 'c0000000-0000-4000-8000-000000000001'
 const generationId = 'c0000000-0000-4000-8000-000000000002'
-const recoveryKey = `trailplan:private:${userId}:${tripId}:draft`
+const recoveryKey = `sightpace:private:${userId}:${tripId}:draft`
 
 const draft = {
   title: '',

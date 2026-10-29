@@ -154,6 +154,9 @@ it('shows an activity empty state with a clear next step', () => {
     within(activities).getByText('Add your first stop to start planning this day.'),
   ).toBeVisible()
   expect(addActivity).toBeVisible()
+  expect(
+    within(screen.getByRole('region', { name: 'Timeline' })).getByText('09:00'),
+  ).not.toBeVisible()
 })
 
 it('groups icon actions with accessible names and tooltip text on focus', () => {
@@ -286,11 +289,14 @@ it('shows activity field examples as placeholders without pre-filling new activi
   fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Set a fixed start time' }))
 
   // Assert
-  expect(within(dialog).getByLabelText('Name')).toHaveAttribute('placeholder', 'Visit the museum')
+  expect(within(dialog).getByLabelText('Name')).toHaveAttribute(
+    'placeholder',
+    'Visit Borobudur Temple',
+  )
   expect(within(dialog).getByLabelText('Name')).toHaveValue('')
   expect(within(dialog).getByLabelText('Place label')).toHaveAttribute(
     'placeholder',
-    'National Museum, Lisbon',
+    'Borobudur Temple, Central Java',
   )
   expect(within(dialog).getByLabelText('Place label')).toHaveValue('')
   expect(within(dialog).getByLabelText('Duration (minutes)')).toHaveAttribute('placeholder', '60')
@@ -476,39 +482,26 @@ it('requires explicit day boundaries, rejects duplicate dates inline, and clears
   expect(finish).toHaveValue('')
 })
 
-it('prevents adding a day before the current date', () => {
+it('allows adding a past day', () => {
   // Arrange
-  render(<TripEditor trip={trip} minimumDate={currentDate} />)
+  render(<TripEditor trip={trip} />)
   openNewDayForm()
   const date = screen.getByLabelText('New day date')
   fireEvent.change(date, { target: { value: offsetDate(-1) } })
   fireEvent.change(screen.getByLabelText('Starts at'), { target: { value: '08:15' } })
   fireEvent.change(screen.getByLabelText('Finishes at'), { target: { value: '17:45' } })
-  const form = date.closest('form')
-  if (!form) throw new Error('New day form is missing')
 
   // Act
-  fireEvent.submit(form)
+  fireEvent.click(screen.getByRole('button', { name: 'Add day' }))
 
   // Assert
-  expect(date).toHaveAttribute('min', currentDate)
-  expect(date).toHaveAttribute('aria-invalid', 'true')
-  expect(screen.getByText('Choose today or a future date.')).toBeVisible()
-  expect(screen.getAllByRole('button', { name: /Day / })).toHaveLength(1)
+  expect(screen.getAllByRole('button', { name: /Day [12] ·/ })).toHaveLength(2)
 })
 
-it('marks an existing past day invalid and pauses autosave until its date is corrected', async () => {
+it('saves changes to a trip with a past day', async () => {
   // Arrange
   vi.useFakeTimers()
-  render(
-    <TripEditor
-      minimumDate={currentDate}
-      trip={{
-        ...trip,
-        days: [{ ...trip.days[0], date: offsetDate(-1) }],
-      }}
-    />,
-  )
+  render(<TripEditor trip={{ ...trip, days: [{ ...trip.days[0], date: offsetDate(-1) }] }} />)
   const date = screen.getByLabelText('Day date')
   fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Updated trip' } })
 
@@ -516,11 +509,8 @@ it('marks an existing past day invalid and pauses autosave until its date is cor
   await act(async () => vi.advanceTimersByTimeAsync(1000))
 
   // Assert
-  expect(date).toHaveAttribute('min', currentDate)
-  expect(date).toHaveAttribute('aria-invalid', 'true')
-  expect(screen.getByText('Choose today or a future date.')).toBeVisible()
-  expect(screen.getByRole('status')).toHaveTextContent('Fix the highlighted fields to save')
-  expect(mocks.save).not.toHaveBeenCalled()
+  expect(date).toHaveAttribute('aria-invalid', 'false')
+  expect(mocks.save).toHaveBeenCalled()
 })
 
 it('associates a duplicate new-day date error with its input', () => {
@@ -759,7 +749,7 @@ it('offers restoration only for the matching server revision and saves after the
   // Assert
   expect(screen.getByLabelText('Trip name')).toHaveValue('Recovered Lisbon week')
   expect(mocks.save).toHaveBeenCalledOnce()
-  expect(localStorage.getItem(`trailplan:private:${userId}:${trip.id}:draft`)).toBeNull()
+  expect(localStorage.getItem(`sightpace:private:${userId}:${trip.id}:draft`)).toBeNull()
 })
 
 it('keeps a stale recovery draft local and requires confirmation before discarding it', async () => {
@@ -791,7 +781,7 @@ it('keeps a stale recovery draft local and requires confirmation before discardi
   expect(screen.getByRole('status')).toHaveTextContent('All changes saved')
   expect(mocks.save).not.toHaveBeenCalled()
   expect(mocks.refresh).toHaveBeenCalledOnce()
-  expect(localStorage.getItem(`trailplan:private:${userId}:${trip.id}:draft`)).toBeNull()
+  expect(localStorage.getItem(`sightpace:private:${userId}:${trip.id}:draft`)).toBeNull()
 })
 
 it('warns when browser storage cannot persist a private recovery draft', () => {
@@ -819,7 +809,7 @@ it('offers save, stay, or discard before an in-app link leaves a dirty private t
   // Arrange
   vi.useFakeTimers()
   const userId = 'synthetic-navigation-user'
-  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  const recoveryKey = `sightpace:private:${userId}:${trip.id}:draft`
   render(
     <>
       <a href="/trips">My trips</a>
@@ -849,7 +839,7 @@ it('keeps the trip and its recovery copy when the traveler stays', () => {
   // Arrange
   vi.useFakeTimers()
   const userId = 'synthetic-navigation-stay-user'
-  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  const recoveryKey = `sightpace:private:${userId}:${trip.id}:draft`
   render(
     <>
       <a href="/trips">My trips</a>
@@ -875,7 +865,7 @@ it('cancels a pending debounce and clears the local copy when the traveler disca
   // Arrange
   vi.useFakeTimers()
   const userId = 'synthetic-navigation-user'
-  const recoveryKey = `trailplan:private:${userId}:${trip.id}:draft`
+  const recoveryKey = `sightpace:private:${userId}:${trip.id}:draft`
   render(
     <>
       <a href="/trips">My trips</a>

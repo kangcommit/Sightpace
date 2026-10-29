@@ -11,6 +11,7 @@ vi.mock('next/headers', () => ({ headers: mocks.headers }))
 
 import { GET, POST } from '@/app/api/auth/[...all]/route'
 import { authOptions } from '@/lib/auth-options'
+import { APP_NAME } from '@/lib/brand'
 import { requireUser } from '@/lib/session'
 
 let clientAddress = 0
@@ -92,6 +93,17 @@ beforeEach(() => {
 })
 
 describe('authentication configuration', () => {
+  it('uses the shared app name for Better Auth', () => {
+    // Arrange
+    const options = authOptions(env)
+
+    // Act
+    const configuredName = options.appName
+
+    // Assert
+    expect(configuredName).toBe(APP_NAME)
+  })
+
   it.each([
     'DATABASE_URL',
     'BETTER_AUTH_SECRET',
