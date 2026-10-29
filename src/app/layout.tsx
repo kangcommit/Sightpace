@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { ThemeProvider } from '@/components/theme-provider'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { APP_NAME } from '@/lib/brand'
 
@@ -14,11 +13,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark light',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f8f7f2' },
-    { media: '(prefers-color-scheme: dark)', color: '#15211c' },
-  ],
+  colorScheme: 'light',
+  themeColor: '#f8f7f2',
 }
 
 export default function RootLayout({
@@ -27,11 +23,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>
-        <ThemeProvider>
-          <TooltipProvider delay={500}>{children}</TooltipProvider>
-        </ThemeProvider>
+        <TooltipProvider delay={500}>{children}</TooltipProvider>
       </body>
     </html>
   )
