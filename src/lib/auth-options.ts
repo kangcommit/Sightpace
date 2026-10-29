@@ -1,6 +1,7 @@
 import type { BetterAuthOptions } from 'better-auth'
 import { APIError, createAuthMiddleware, formCsrfMiddleware, getSession } from 'better-auth/api'
 import { safeReturnPath, signInPath } from '@/lib/auth-redirect'
+import { APP_NAME } from '@/lib/brand'
 import { getAuthEnv } from '@/lib/env'
 import { appRoutes } from '@/lib/routes'
 
@@ -9,7 +10,7 @@ export function authOptions(source: NodeJS.ProcessEnv = process.env) {
   const base = new URL(env.BETTER_AUTH_URL)
 
   return {
-    appName: 'TrailPlan',
+    appName: APP_NAME,
     baseURL: base.origin,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [base.origin],
