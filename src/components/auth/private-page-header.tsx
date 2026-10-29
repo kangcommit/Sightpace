@@ -1,12 +1,10 @@
-import Link from 'next/link'
 import { PrivateSignOutButton } from '@/components/auth/private-session'
+import { BrandLink } from '@/components/brand-link'
 
 export function PrivatePageHeader({ href }: { href: string }) {
   return (
     <header className="flex min-h-11 items-center justify-between gap-4">
-      <Link href={href} className="flex min-h-11 items-center font-semibold">
-        TrailPlan
-      </Link>
+      <BrandLink href={href} />
       <PrivateSignOutButton />
     </header>
   )

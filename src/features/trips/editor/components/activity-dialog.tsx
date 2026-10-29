@@ -111,11 +111,16 @@ export function ActivityDialog({
         <form className="flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="activity-title">Name</FieldLabel>
+              <FieldLabel
+                htmlFor="activity-title"
+                className="after:text-destructive after:content-['*']"
+              >
+                Name
+              </FieldLabel>
               <Input
                 ref={nameRef}
                 id="activity-title"
-                placeholder="Visit the museum"
+                placeholder="Visit Borobudur Temple"
                 value={title}
                 maxLength={120}
                 required
@@ -128,14 +133,19 @@ export function ActivityDialog({
               <FieldLabel htmlFor="activity-place">Place label</FieldLabel>
               <Input
                 id="activity-place"
-                placeholder="National Museum, Lisbon"
+                placeholder="Borobudur Temple, Central Java"
                 value={placeLabel}
                 maxLength={200}
                 onChange={handlePlaceLabelChange}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="activity-duration">Duration (minutes)</FieldLabel>
+              <FieldLabel
+                htmlFor="activity-duration"
+                className="after:text-destructive after:content-['*']"
+              >
+                Duration (minutes)
+              </FieldLabel>
               <Input
                 ref={durationRef}
                 id="activity-duration"
@@ -172,7 +182,12 @@ export function ActivityDialog({
               </div>
               {fixed ? (
                 <>
-                  <FieldLabel htmlFor="activity-fixed-time">Start time</FieldLabel>
+                  <FieldLabel
+                    htmlFor="activity-fixed-time"
+                    className="after:text-destructive after:content-['*']"
+                  >
+                    Start time
+                  </FieldLabel>
                   <Input
                     ref={bookingRef}
                     id="activity-fixed-time"

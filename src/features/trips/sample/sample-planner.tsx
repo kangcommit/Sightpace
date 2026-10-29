@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
+import { BrandLink } from '@/components/brand-link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -16,13 +16,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { signInPath } from '@/lib/auth-redirect'
+import { SAMPLE_COPY_TRANSFER_KEY } from '@/lib/brand'
 import { appRoutes } from '@/lib/routes'
 import { type TripEditorDraft, tripEditorDraftSchema } from '../editor/editor-contract'
 import { TripEditor } from '../editor/trip-editor'
 import type { InitialTrip } from '../editor/trip-editor-utils'
 import { createSampleCopyAction } from '../server/create-sample-copy-action'
 
-const transferKey = 'trailplan:demo:copy'
 type Transfer = { mutationId: string; snapshot: TripEditorDraft }
 
 export function SamplePlanner({
@@ -69,7 +69,8 @@ export function SamplePlanner({
   useEffect(() => {
     let restored: Transfer | null = null
     try {
-      const stored = sessionStorage.getItem(transferKey)
+      const stored = sessionStorage.getItem(SAMPLE_COPY_TRANSFER_KEY)
+
       if (stored) {
         const parsed: unknown = JSON.parse(stored)
         if (
@@ -86,7 +87,7 @@ export function SamplePlanner({
               restored = { mutationId: mutationId.data, snapshot: snapshot.data }
           }
         }
-        sessionStorage.removeItem(transferKey)
+        sessionStorage.removeItem(SAMPLE_COPY_TRANSFER_KEY)
       }
     } catch {
       setError(
@@ -128,7 +129,7 @@ export function SamplePlanner({
     setTransfer(next)
     if (!authenticated) {
       try {
-        sessionStorage.setItem(transferKey, JSON.stringify(next))
+        sessionStorage.setItem(SAMPLE_COPY_TRANSFER_KEY, JSON.stringify(next))
       } catch {
         setError(
           'Your browser could not keep these edits for sign-in. Keep this tab open and try again.',
@@ -151,7 +152,7 @@ export function SamplePlanner({
         setError(result.message)
         if (result.code === 'UNAUTHENTICATED') {
           try {
-            sessionStorage.setItem(transferKey, JSON.stringify(transfer))
+            sessionStorage.setItem(SAMPLE_COPY_TRANSFER_KEY, JSON.stringify(transfer))
             router.push(signInPath(appRoutes.demo))
           } catch {
             setError(
@@ -161,7 +162,7 @@ export function SamplePlanner({
         }
         return
       }
-      sessionStorage.removeItem(transferKey)
+      sessionStorage.removeItem(SAMPLE_COPY_TRANSFER_KEY)
       router.push(appRoutes.trip(result.tripId))
     } catch {
       setError(
@@ -189,9 +190,7 @@ export function SamplePlanner({
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <Link href={appRoutes.home} className="flex min-h-11 w-fit items-center font-semibold">
-        TrailPlan
-      </Link>
+      <BrandLink href={appRoutes.home} />
       <section className="flex flex-col gap-4" aria-label="Sample trip">
         <Alert>
           <AlertDescription>
@@ -232,7 +231,7 @@ export function SamplePlanner({
             <AlertDialogContent>
               <AlertDialogTitle>Reset sample?</AlertDialogTitle>
               <AlertDialogDescription>
-                This restores the original Porto day and discards your sample edits.
+                This restores the original Bandung day and discards your sample edits.
               </AlertDialogDescription>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button

@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { TripEditor } from '@/features/trips/editor/trip-editor'
 import { getTrip } from '@/features/trips/server/queries'
-import { todayDate } from '@/features/trips/shared/date-rules'
 import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
@@ -53,7 +52,6 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
                 revision: result.data.revision,
                 days: result.data.days,
               }}
-              minimumDate={todayDate()}
             />
           </article>
         )}

@@ -10,7 +10,6 @@ export function TripEditorDayNavigation({
   days,
   selectedKey,
   newDayOpen,
-  minimumDate,
   date,
   start,
   finish,
@@ -25,7 +24,6 @@ export function TripEditorDayNavigation({
   days: EditorDay[]
   selectedKey: string
   newDayOpen: boolean
-  minimumDate: string
   date: string
   start: string
   finish: string
@@ -71,7 +69,6 @@ export function TripEditorDayNavigation({
       <AddDayForm
         onAdd={onAdd}
         error={error}
-        minimumDate={minimumDate}
         open={newDayOpen}
         date={date}
         onDateChange={onDateChange}
@@ -114,7 +111,6 @@ function DayNavigationButton({
 function AddDayForm({
   onAdd,
   error,
-  minimumDate,
   open,
   date,
   onDateChange,
@@ -125,7 +121,6 @@ function AddDayForm({
 }: {
   onAdd: (date: string, start: string, finish: string) => boolean
   error: string | null
-  minimumDate: string
   open: boolean
   date: string
   onDateChange: (value: string) => void
@@ -164,7 +159,6 @@ function AddDayForm({
             type="date"
             required
             className="block!"
-            min={minimumDate}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? 'new-day-error' : undefined}
             value={date}

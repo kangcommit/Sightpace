@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { isDateTodayOrLater } from '../../shared/date-rules'
 import type { EditorDay } from '../trip-editor-utils'
 import { fromTime, toTime, validDate } from '../trip-editor-utils'
 
 export function TripEditorDayFields({
   day,
-  minimumDate,
   duplicateDate,
   onDateChange,
   onStartChange,
@@ -18,15 +16,13 @@ export function TripEditorDayFields({
   onDelete,
 }: {
   day: EditorDay
-  minimumDate: string
   duplicateDate: boolean
   onDateChange: (date: string) => void
   onStartChange: (minute: number) => void
   onFinishChange: (minute: number) => void
   onDelete: () => void
 }) {
-  const invalidDate =
-    !validDate(day.date) || !isDateTodayOrLater(day.date, minimumDate) || duplicateDate
+  const invalidDate = !validDate(day.date) || duplicateDate
   const invalidHours =
     day.startMinute > 1438 || day.finishMinute < 1 || day.startMinute >= day.finishMinute
 
@@ -52,7 +48,6 @@ export function TripEditorDayFields({
             type="date"
             required
             className="block!"
-            min={minimumDate}
             value={day.date}
             aria-invalid={invalidDate}
             aria-describedby={invalidDate ? 'day-date-error' : undefined}
@@ -60,11 +55,7 @@ export function TripEditorDayFields({
           />
           {invalidDate ? (
             <p id="day-date-error" className="text-destructive text-sm">
-              {!validDate(day.date)
-                ? 'Enter a valid day date.'
-                : !isDateTodayOrLater(day.date, minimumDate)
-                  ? 'Choose today or a future date.'
-                  : 'A day already uses this date.'}
+              {!validDate(day.date) ? 'Enter a valid day date.' : 'A day already uses this date.'}
             </p>
           ) : null}
         </Field>

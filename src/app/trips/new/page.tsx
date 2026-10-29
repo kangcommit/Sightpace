@@ -23,9 +23,10 @@ export default async function NewTripPage() {
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6">
       <PrivateSession userId={user.data.id}>
         <PrivatePageHeader href={appRoutes.trips} />
-        <section className="flex flex-col gap-6">
+        <section className="flex flex-col gap-6 pt-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold">Create a trip</h1>
+            <p className="text-primary text-sm font-semibold">Start planning</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Create a trip</h1>
             <p className="text-muted-foreground">
               Add a name, destination, first day and its planning hours.
             </p>

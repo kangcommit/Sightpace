@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { signInPath } from '@/lib/auth-redirect'
 import { calculateDaySchedule } from '@/lib/scheduling'
-import { isDateTodayOrLater, todayDate } from '../shared/date-rules'
 import { ActivityDialog } from './components/activity-dialog'
 import { TripEditorDayFields } from './components/trip-editor-day-fields'
 import { TripEditorDayNavigation } from './components/trip-editor-day-navigation'
@@ -29,14 +28,12 @@ import { useTripDraftRecovery } from './use-trip-draft-recovery'
 export function TripEditor({
   trip,
   userId,
-  minimumDate = todayDate(),
   initialDraft,
   sampleMode = false,
   onDraftChange,
 }: {
   trip: InitialTrip
   userId?: string
-  minimumDate?: string
   initialDraft?: TripEditorDraft
   sampleMode?: boolean
   onDraftChange?: (draft: TripEditorDraft) => void
@@ -68,7 +65,6 @@ export function TripEditor({
   const destinationInvalid = draft.destination.trim().length === 0
   const invalidDay = (day: TripEditorDraft['days'][number]) =>
     !validDate(day.date) ||
-    !isDateTodayOrLater(day.date, minimumDate) ||
     (dateCounts.get(day.date) ?? 0) > 1 ||
     day.startMinute < 0 ||
     day.startMinute > 1438 ||
@@ -371,10 +367,6 @@ export function TripEditor({
       setDayError('Enter a valid day date.')
       return false
     }
-    if (!isDateTodayOrLater(date, minimumDate)) {
-      setDayError('Choose today or a future date.')
-      return false
-    }
     if (draft.days.some((day) => day.date === date)) {
       setDayError('A day already uses this date.')
       return false
@@ -505,7 +497,6 @@ export function TripEditor({
           days={draft.days}
           selectedKey={selected?.key ?? ''}
           newDayOpen={newDayOpen}
-          minimumDate={minimumDate}
           date={newDayDate}
           start={newDayStart}
           finish={newDayFinish}
@@ -521,7 +512,6 @@ export function TripEditor({
           <>
             <TripEditorDayFields
               day={selected}
-              minimumDate={minimumDate}
               duplicateDate={selectedDuplicateDate}
               onDateChange={handleSelectedDateChange}
               onStartChange={handleSelectedStartChange}

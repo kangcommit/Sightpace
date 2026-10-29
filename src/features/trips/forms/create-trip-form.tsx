@@ -59,7 +59,7 @@ export function CreateTripForm({
             name="title"
             required
             maxLength={120}
-            placeholder="e.g. Summer in Portugal"
+            placeholder="e.g. Weekend in Yogyakarta"
             defaultValue={state.values.title}
             aria-invalid={Boolean(state.errors.title) || undefined}
             aria-describedby={state.errors.title ? 'trip-title-error' : undefined}
@@ -75,7 +75,7 @@ export function CreateTripForm({
             name="destination"
             required
             maxLength={120}
-            placeholder="e.g. Lisbon, Portugal"
+            placeholder="e.g. Yogyakarta, Indonesia"
             defaultValue={state.values.destination}
             aria-invalid={Boolean(state.errors.destination) || undefined}
             aria-describedby={state.errors.destination ? 'trip-destination-error' : undefined}
@@ -84,6 +84,7 @@ export function CreateTripForm({
             <FieldError id="trip-destination-error">{state.errors.destination}</FieldError>
           )}
         </Field>
+        <h2 className="pt-2 text-lg font-semibold">First day</h2>
         <Field data-invalid={Boolean(state.errors.date)}>
           <FieldLabel htmlFor="trip-date">First day date</FieldLabel>
           <Input
@@ -103,46 +104,48 @@ export function CreateTripForm({
           <FieldDescription id="trip-date-hint">Choose today or later.</FieldDescription>
           {state.errors.date && <FieldError id="trip-date-error">{state.errors.date}</FieldError>}
         </Field>
-        <Field data-invalid={Boolean(state.errors.startTime)}>
-          <FieldLabel htmlFor="trip-startTime">Day starts at</FieldLabel>
-          <Input
-            id="trip-startTime"
-            type="time"
-            name="startTime"
-            required
-            min="00:00"
-            max="23:58"
-            step={60}
-            value={startTimeValue}
-            onChange={handleStartTimeChange}
-            className="block!"
-            aria-invalid={Boolean(state.errors.startTime) || undefined}
-            aria-describedby={state.errors.startTime ? 'trip-startTime-error' : undefined}
-          />
-          {state.errors.startTime && (
-            <FieldError id="trip-startTime-error">{state.errors.startTime}</FieldError>
-          )}
-        </Field>
-        <Field data-invalid={Boolean(state.errors.finishTime)}>
-          <FieldLabel htmlFor="trip-finishTime">Day finishes at</FieldLabel>
-          <Input
-            id="trip-finishTime"
-            type="time"
-            name="finishTime"
-            required
-            min="00:01"
-            max="23:59"
-            step={60}
-            value={finishTimeValue}
-            onChange={handleFinishTimeChange}
-            className="block!"
-            aria-invalid={Boolean(state.errors.finishTime) || undefined}
-            aria-describedby={state.errors.finishTime ? 'trip-finishTime-error' : undefined}
-          />
-          {state.errors.finishTime && (
-            <FieldError id="trip-finishTime-error">{state.errors.finishTime}</FieldError>
-          )}
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field data-invalid={Boolean(state.errors.startTime)}>
+            <FieldLabel htmlFor="trip-startTime">Day starts at</FieldLabel>
+            <Input
+              id="trip-startTime"
+              type="time"
+              name="startTime"
+              required
+              min="00:00"
+              max="23:58"
+              step={60}
+              value={startTimeValue}
+              onChange={handleStartTimeChange}
+              className="block!"
+              aria-invalid={Boolean(state.errors.startTime) || undefined}
+              aria-describedby={state.errors.startTime ? 'trip-startTime-error' : undefined}
+            />
+            {state.errors.startTime && (
+              <FieldError id="trip-startTime-error">{state.errors.startTime}</FieldError>
+            )}
+          </Field>
+          <Field data-invalid={Boolean(state.errors.finishTime)}>
+            <FieldLabel htmlFor="trip-finishTime">Day finishes at</FieldLabel>
+            <Input
+              id="trip-finishTime"
+              type="time"
+              name="finishTime"
+              required
+              min="00:01"
+              max="23:59"
+              step={60}
+              value={finishTimeValue}
+              onChange={handleFinishTimeChange}
+              className="block!"
+              aria-invalid={Boolean(state.errors.finishTime) || undefined}
+              aria-describedby={state.errors.finishTime ? 'trip-finishTime-error' : undefined}
+            />
+            {state.errors.finishTime && (
+              <FieldError id="trip-finishTime-error">{state.errors.finishTime}</FieldError>
+            )}
+          </Field>
+        </div>
       </FieldGroup>
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={pending} className="min-h-11">

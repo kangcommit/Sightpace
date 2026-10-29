@@ -120,11 +120,11 @@ function ActivityItem({
       tabIndex={-1}
       aria-label={`Activity ${index + 1}: ${activity.title}`}
       data-activity-key={activity.key}
-      className="flex flex-col gap-2 rounded-lg border p-4"
+      className="bg-card flex flex-col gap-3 rounded-xl border p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-medium">
+          <p className="font-semibold">
             {index + 1}. {activity.title}
           </p>
           <p className="text-muted-foreground text-sm">
@@ -147,11 +147,8 @@ function ActivityItem({
             </p>
           ) : null}
           {entry?.provisional ? (
-            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-amber-800 dark:text-amber-200">
-              <Badge
-                variant="outline"
-                className="border-amber-700/40 bg-amber-50 text-amber-900 dark:border-amber-300/40 dark:bg-amber-950/40 dark:text-amber-100"
-              >
+            <p className="text-warning flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+              <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning">
                 Provisional
               </Badge>
               <span>Earlier travel time is missing.</span>
@@ -165,7 +162,7 @@ function ActivityItem({
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 min-w-11"
+                  className="disabled:text-muted-foreground min-h-11 min-w-11 disabled:opacity-100"
                   aria-label={`Move ${activity.title} up`}
                   disabled={index === 0}
                   onClick={handleMoveUp}
@@ -182,7 +179,7 @@ function ActivityItem({
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 min-w-11"
+                  className="disabled:text-muted-foreground min-h-11 min-w-11 disabled:opacity-100"
                   aria-label={`Move ${activity.title} down`}
                   disabled={index === day.activities.length - 1}
                   onClick={handleMoveDown}
@@ -216,7 +213,7 @@ function ActivityItem({
                 <Button
                   type="button"
                   variant="destructive"
-                  className="min-h-11 min-w-11"
+                  className="border-input min-h-11 min-w-11"
                   aria-label={`Delete ${activity.title}`}
                   onClick={handleDelete}
                 />
@@ -293,23 +290,25 @@ function TravelControl({
           onChange={handleValueChange}
         />
       </Field>
-      <Button
-        variant="outline"
-        className="min-h-11"
-        disabled={value === '' || invalid}
-        onClick={handleSetEstimate}
-      >
-        {estimate ? 'Update estimate' : 'Set estimate'}
-      </Button>
+      <div className="ml-auto flex gap-2">
+        <Button
+          variant="outline"
+          className="min-h-11"
+          disabled={value === '' || invalid}
+          onClick={handleSetEstimate}
+        >
+          {estimate ? 'Update estimate' : 'Set estimate'}
+        </Button>
+        {estimate ? (
+          <Button variant="outline" className="min-h-11" onClick={handleClearEstimate}>
+            Clear
+          </Button>
+        ) : null}
+      </div>
       {invalid ? (
         <p id={errorId} className="text-destructive w-full text-sm">
           Enter a whole number from 0 to 1439 minutes.
         </p>
-      ) : null}
-      {estimate ? (
-        <Button variant="outline" className="min-h-11" onClick={handleClearEstimate}>
-          Clear
-        </Button>
       ) : null}
       <p className="text-muted-foreground w-full text-sm">
         {estimate

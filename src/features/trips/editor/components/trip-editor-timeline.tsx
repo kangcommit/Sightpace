@@ -172,7 +172,11 @@ export function TripEditorTimeline({
           </EmptyHeader>
         </Empty>
       ) : null}
-      <div className="relative min-w-0" style={{ height: `${timelineHeight}px` }}>
+      <div
+        className="relative min-w-0"
+        hidden={day.activities.length === 0}
+        style={{ height: `${timelineHeight}px` }}
+      >
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           {ticks.map((minute) => {
             const major = minute % 60 === 0
@@ -242,7 +246,7 @@ export function TripEditorTimeline({
                 variant="outline"
                 aria-label={ariaDescription}
                 data-activity-key={activity.key}
-                className={`absolute right-1 left-14 z-10 flex h-auto flex-col items-start justify-start gap-0.5 overflow-hidden rounded-md px-2 py-1 text-left text-xs font-normal whitespace-normal ${segment.entry.provisional ? 'border-dashed' : ''}`}
+                className={`bg-card border-l-primary absolute right-1 left-14 z-10 flex h-auto flex-col items-start justify-start gap-0.5 overflow-hidden rounded-md border-l-4 px-2 py-1 text-left text-xs font-normal whitespace-normal ${segment.entry.provisional ? 'border-dashed' : ''}`}
                 style={{ top: `${segment.top}px`, height: `${segment.height}px` }}
                 onClick={handleTimelineActivityClick}
               >
@@ -261,10 +265,7 @@ export function TripEditorTimeline({
                   </span>
                 ) : null}
                 {segment.entry.provisional ? (
-                  <Badge
-                    variant="outline"
-                    className="border-amber-700/40 bg-amber-50 text-amber-900 dark:border-amber-300/40 dark:bg-amber-950/40 dark:text-amber-100"
-                  >
+                  <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning">
                     Provisional
                   </Badge>
                 ) : null}
@@ -276,7 +277,7 @@ export function TripEditorTimeline({
             <div
               key={segment.key}
               aria-hidden="true"
-              className={`absolute right-1 left-14 z-10 flex items-center gap-2 overflow-hidden border-l-2 px-2 text-xs ${segment.kind === 'wait' ? 'border-primary/60 bg-muted/70 text-foreground' : segment.minutes === null ? 'border-dashed border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-300 dark:bg-amber-950/40 dark:text-amber-100' : 'border-border bg-muted/60 text-muted-foreground border-dashed'}`}
+              className={`absolute right-1 left-14 z-10 flex items-center gap-2 overflow-hidden border-l-2 px-2 text-xs ${segment.kind === 'wait' ? 'border-primary/60 bg-muted/70 text-foreground' : segment.minutes === null ? 'border-warning bg-warning/10 text-warning border-dashed' : 'border-border bg-muted/60 text-muted-foreground border-dashed'}`}
               style={{ top: `${segment.top}px`, height: `${segment.height}px` }}
             >
               <span className="truncate">

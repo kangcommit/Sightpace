@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
 import { signInPath } from '@/lib/auth-redirect'
+import { PRIVATE_STORAGE_OWNER_KEY } from '@/lib/brand'
 import { clearPrivateStorage, preparePrivateStorage } from '@/lib/private-storage'
 import { appRoutes } from '@/lib/routes'
 
@@ -62,7 +63,7 @@ export function PrivateSession({
   useEffect(() => {
     function onStorage(event: StorageEvent) {
       if (
-        (event.key === null || event.key === 'trailplan:private:owner') &&
+        (event.key === null || event.key === PRIVATE_STORAGE_OWNER_KEY) &&
         event.newValue !== userId
       ) {
         setExternalChange(true)

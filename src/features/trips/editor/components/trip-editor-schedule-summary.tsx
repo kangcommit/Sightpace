@@ -80,7 +80,7 @@ export function TripEditorScheduleSummary({
   return (
     <section
       aria-label="Day schedule summary"
-      className="bg-muted/50 flex flex-col gap-2 rounded-lg p-4"
+      className="bg-secondary/60 flex flex-col gap-2 rounded-xl p-4 sm:p-5"
     >
       <p>
         Projected finish {formatTime(schedule.summary.projectedFinishMinute)} · day finishes{' '}
@@ -91,14 +91,14 @@ export function TripEditorScheduleSummary({
       </p>
       {issues.length === 0 ? <p>No timing conflicts found with your estimates.</p> : null}
       {schedule.warnings.missingTravelPairs.length ? (
-        <p className="text-amber-800 dark:text-amber-200">
+        <p className="text-warning">
           {schedule.warnings.missingTravelPairs.length} travel estimate
           {schedule.warnings.missingTravelPairs.length === 1 ? '' : 's'} not set. Later times use 0
           min until you add an estimate.
         </p>
       ) : null}
       {schedule.warnings.nextDayProjection ? (
-        <p className="text-amber-800 dark:text-amber-200">
+        <p className="text-warning">
           This plan extends into the next day. Overnight planning isn’t supported.
         </p>
       ) : null}
