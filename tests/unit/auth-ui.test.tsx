@@ -111,7 +111,7 @@ describe('private browser data and sign-out', () => {
   it('shows a header sign-out action that clears private drafts before revoking the session', async () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     mocks.signOut.mockImplementationOnce(() => new Promise(() => {}))
     render(
       <PrivateSession userId="a">
@@ -126,7 +126,7 @@ describe('private browser data and sign-out', () => {
 
     // Assert
     expect(mocks.signOut).toHaveBeenCalledOnce()
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBeNull()
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBeNull()
     expect(await screen.findByRole('status')).toHaveTextContent('Signing out…')
     expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument()
   })
@@ -157,7 +157,7 @@ describe('private browser data and sign-out', () => {
   it('acknowledges server sign-out even when saved-edit cleanup fails', async () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     mocks.signOut.mockResolvedValueOnce({ error: null })
     mocks.useSession.mockReturnValue({ data: null, isPending: false, error: null })
     render(
@@ -188,7 +188,7 @@ describe('private browser data and sign-out', () => {
   it('offers retry for an account-check error without treating it as sign-out or removing drafts', async () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     mocks.refetch.mockResolvedValueOnce(undefined)
     mocks.useSession.mockReturnValue({
       data: null,
@@ -211,7 +211,7 @@ describe('private browser data and sign-out', () => {
     await waitFor(() => expect(mocks.refetch).toHaveBeenCalledTimes(1))
 
     // Assert
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBe('synthetic draft')
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBe('synthetic draft')
     expect(screen.queryByText('Private itinerary')).not.toBeInTheDocument()
   })
 
@@ -269,8 +269,8 @@ describe('private browser data and sign-out', () => {
   it('purges only namespaced private data from both storage areas', () => {
     // Arrange
     for (const storage of [localStorage, sessionStorage]) {
-      storage.setItem('trailplan:private:a:trip', 'synthetic draft')
-      storage.setItem('trailplan:demo', 'public sample')
+      storage.setItem('sightpace:private:a:trip', 'synthetic draft')
+      storage.setItem('sightpace:demo', 'public sample')
       storage.setItem('unrelated', 'keep')
     }
 
@@ -279,8 +279,8 @@ describe('private browser data and sign-out', () => {
 
     // Assert
     for (const storage of [localStorage, sessionStorage]) {
-      expect(storage.getItem('trailplan:private:a:trip')).toBeNull()
-      expect(storage.getItem('trailplan:demo')).toBe('public sample')
+      expect(storage.getItem('sightpace:private:a:trip')).toBeNull()
+      expect(storage.getItem('sightpace:demo')).toBe('public sample')
       expect(storage.getItem('unrelated')).toBe('keep')
     }
   })
@@ -288,32 +288,32 @@ describe('private browser data and sign-out', () => {
   it('preserves same-account recovery in a new tab', () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     sessionStorage.clear()
 
     // Act
     expect(preparePrivateStorage('a')).toBe(true)
 
     // Assert
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBe('synthetic draft')
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBe('synthetic draft')
   })
 
   it('clears old-account data before preparing a new private view', () => {
     // Arrange
     expect(preparePrivateStorage('a')).toBe(true)
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
 
     // Act
     expect(preparePrivateStorage('b')).toBe(true)
 
     // Assert
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBeNull()
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBeNull()
   })
 
   it('closes private UI immediately, clears drafts, and reports failed server revocation honestly', async () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     mocks.signOut.mockRejectedValueOnce(new Error('offline'))
     mocks.useSession.mockReturnValue({ data: null, isPending: false, error: null })
 
@@ -335,14 +335,14 @@ describe('private browser data and sign-out', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'We couldn’t sign you out' })).toHaveFocus(),
     )
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBeNull()
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBeNull()
     expect(screen.getByRole('button', { name: 'Retry sign out' })).toBeEnabled()
   })
 
   it('hides an expired session while preserving the same user’s recovery draft', () => {
     // Arrange
     preparePrivateStorage('a')
-    localStorage.setItem('trailplan:private:a:trip', 'synthetic draft')
+    localStorage.setItem('sightpace:private:a:trip', 'synthetic draft')
     mocks.useSession.mockReturnValue({ data: null, isPending: false, error: null })
 
     // Act
@@ -355,7 +355,7 @@ describe('private browser data and sign-out', () => {
     // Assert
     expect(screen.queryByText('Private itinerary')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Sign in again' })).toBeVisible()
-    expect(localStorage.getItem('trailplan:private:a:trip')).toBe('synthetic draft')
+    expect(localStorage.getItem('sightpace:private:a:trip')).toBe('synthetic draft')
   })
 
   it('fails closed and warns when browser storage is unavailable', async () => {

@@ -30,7 +30,7 @@ beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
   vi.stubEnv('NODE_ENV', 'development')
-  vi.stubEnv('DATABASE_URL', 'postgresql://test:test@localhost:5432/trailplan_test')
+  vi.stubEnv('DATABASE_URL', 'postgresql://test:test@localhost:5432/sightpace_test')
 })
 
 afterEach(() => {

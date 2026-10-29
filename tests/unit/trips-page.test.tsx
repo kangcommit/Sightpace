@@ -75,7 +75,8 @@ it('uses shadcn items for saved trips and keeps the row actions reachable', asyn
   expect(
     within(screen.getByRole('list', { name: 'Saved trips' })).getByRole('listitem'),
   ).toBeVisible()
-  expect(screen.getByRole('heading', { name: 'Lisbon week', level: 2 })).toBeVisible()
+  expect(screen.getByRole('heading', { name: 'Saved trips', level: 2 })).toBeVisible()
+  expect(screen.getByRole('heading', { name: 'Lisbon week', level: 3 })).toBeVisible()
   expect(screen.getByRole('link', { name: /Lisbon week Lisbon/ })).toHaveAttribute(
     'href',
     `/trips/${tripId}`,

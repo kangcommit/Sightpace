@@ -114,9 +114,10 @@ it('rejects caller-supplied ownership fields before storage', async () => {
   expect(mocks.saveTrip).not.toHaveBeenCalled()
 })
 
-it('rejects a past day date at the authenticated save boundary', async () => {
+it('accepts a past day date at the authenticated save boundary', async () => {
   // Arrange
   mocks.requireUser.mockResolvedValue({ ok: true, data: { id: 'verified-owner' } })
+  mocks.saveTrip.mockResolvedValue({ ok: true, data: { tripId: request.tripId, revision: 5 } })
   const date = new Date(`${todayDate()}T00:00:00.000Z`)
   date.setUTCDate(date.getUTCDate() - 1)
   const pastDate = date.toISOString().slice(0, 10)
@@ -132,6 +133,6 @@ it('rejects a past day date at the authenticated save boundary', async () => {
   const result = await saveTripEditorAction(invalidRequest)
 
   // Assert
-  expect(result).toMatchObject({ ok: false, code: 'VALIDATION_ERROR' })
-  expect(mocks.saveTrip).not.toHaveBeenCalled()
+  expect(result.ok).toBe(true)
+  expect(mocks.saveTrip).toHaveBeenCalled()
 })

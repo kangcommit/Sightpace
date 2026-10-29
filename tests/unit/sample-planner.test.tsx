@@ -58,7 +58,7 @@ it('carries edited sample data through sign-in and creates the same private copy
   fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Porto weekend' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save a copy' }))
   const signInPath = mocks.push.mock.calls[0]?.[0]
-  const transferredSnapshot = JSON.parse(sessionStorage.getItem('trailplan:demo:copy') ?? '{}')
+  const transferredSnapshot = JSON.parse(sessionStorage.getItem('sightpace:demo:copy') ?? '{}')
 
   unmount()
   render(<SamplePlanner trip={trip} authenticated />)
@@ -71,7 +71,7 @@ it('carries edited sample data through sign-in and creates the same private copy
   })
   const copyRequest = mocks.create.mock.calls[0]?.[0]
   const tripPath = mocks.push.mock.calls[1]?.[0]
-  const remainingTransfer = sessionStorage.getItem('trailplan:demo:copy')
+  const remainingTransfer = sessionStorage.getItem('sightpace:demo:copy')
 
   // Assert
   expect(signInPath).toBe('/sign-in?returnTo=%2Fdemo')
@@ -99,7 +99,7 @@ it('asks before resetting an edited sample and restores the starter values', asy
     within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Reset sample' }),
   )
   await waitFor(() => {
-    if ((screen.getByLabelText('Trip name') as HTMLInputElement).value !== 'A day in Porto')
+    if ((screen.getByLabelText('Trip name') as HTMLInputElement).value !== 'A day in Bandung')
       throw new Error('Sample reset has not completed.')
   })
   const resetTripName = (screen.getByLabelText('Trip name') as HTMLInputElement).value
@@ -107,6 +107,6 @@ it('asks before resetting an edited sample and restores the starter values', asy
 
   // Assert
   expect(resetDialogTitle).toBe('Reset sample?')
-  expect(resetTripName).toBe('A day in Porto')
+  expect(resetTripName).toBe('A day in Bandung')
   expect(copyActionCalls).toBe(0)
 })

@@ -3,7 +3,7 @@ import { getAuthEnv, getDatabaseEnv } from '@/lib/env'
 
 const authEnv = {
   NODE_ENV: 'test' as const,
-  DATABASE_URL: 'postgresql://test:test@localhost:5432/trailplan_test',
+  DATABASE_URL: 'postgresql://test:test@localhost:5432/sightpace_test',
   BETTER_AUTH_URL: 'http://localhost:3000',
   BETTER_AUTH_SECRET: 'synthetic-secret-with-more-than-32-characters',
   GOOGLE_CLIENT_ID: 'synthetic-client',
@@ -45,7 +45,7 @@ describe('lazy server configuration', () => {
     expect(String(invalidError)).toContain('DATABASE_URL')
   })
 
-  it.each(['postgresql://localhost/trailplan', 'postgres://localhost/trailplan'])(
+  it.each(['postgresql://localhost/sightpace', 'postgres://localhost/sightpace'])(
     'validates a database independently of Google configuration: %s',
     (DATABASE_URL) => {
       // Arrange
@@ -105,7 +105,7 @@ describe('lazy server configuration', () => {
     const productionSource = {
       ...authEnv,
       NODE_ENV: 'production',
-      BETTER_AUTH_URL: 'https://trailplan.example',
+      BETTER_AUTH_URL: 'https://sightpace.example',
     }
     const invalidLoopbackSource = { ...authEnv, NODE_ENV: 'production' as const }
 
@@ -119,7 +119,7 @@ describe('lazy server configuration', () => {
     }
 
     // Assert
-    expect(parsed.BETTER_AUTH_URL).toBe('https://trailplan.example')
+    expect(parsed.BETTER_AUTH_URL).toBe('https://sightpace.example')
     expect(loopbackError).toBeInstanceOf(Error)
     expect(String(loopbackError)).toContain('BETTER_AUTH_URL')
   })
