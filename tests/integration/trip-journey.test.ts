@@ -173,7 +173,7 @@ beforeAll(async () => {
       env: {
         ...process.env,
         NODE_ENV: 'development',
-        TRAILPLAN_INTEGRATION: '1',
+        SIGHTPACE_INTEGRATION: '1',
         NEXT_TELEMETRY_DISABLED: '1',
         DATABASE_URL: databaseUrl,
         BETTER_AUTH_URL: origin,
@@ -237,7 +237,7 @@ it('creates, reloads, lists in a second browser context, and deletes an authenti
     origins: [
       {
         origin,
-        localStorage: [{ name: 'trailplan:private:owner', value: userId }],
+        localStorage: [{ name: 'sightpace:private:owner', value: userId }],
       },
     ],
   }
@@ -467,7 +467,7 @@ it('restores a same-revision draft after reload and keeps a stale draft from ove
     origins: [
       {
         origin,
-        localStorage: [{ name: 'trailplan:private:owner', value: userId }],
+        localStorage: [{ name: 'sightpace:private:owner', value: userId }],
       },
     ],
   }
@@ -478,7 +478,7 @@ it('restores a same-revision draft after reload and keeps a stale draft from ove
   const staleTitle = `${initialTitle} local stale`
   const serverTitle = `${initialTitle} latest server version`
   const date = new Date().toISOString().slice(0, 10)
-  const recoveryKey = `trailplan:private:${userId}:`
+  const recoveryKey = `sightpace:private:${userId}:`
 
   // Act
   await page.goto('/trips/new')
@@ -603,14 +603,14 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
   await page.getByRole('button', { name: 'Reset sample' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Reset sample' }).click()
   await page.waitForFunction(
-    () => (document.querySelector('#trip-title') as HTMLInputElement)?.value === 'A day in Porto',
+    () => (document.querySelector('#trip-title') as HTMLInputElement)?.value === 'A day in Bandung',
   )
   const resetTitle = await page.getByLabel('Trip name').inputValue()
   await page.getByLabel('Trip name').fill(title)
   const sampleTripCountBeforeCopy = await db.trip.count({ where: { userId } })
   await page.getByRole('button', { name: 'Save a copy' }).click()
   await page.waitForURL(/\/sign-in\?returnTo=%2Fdemo/)
-  const signInBackHref = await page.getByRole('link', { name: 'TrailPlan' }).getAttribute('href')
+  const signInBackHref = await page.getByRole('link', { name: 'Sightpace' }).getAttribute('href')
   await context.addCookies(
     sessionCookies.map((cookie) => ({
       ...cookie,
@@ -620,7 +620,7 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
       expires: cookie.expires ?? -1,
     })),
   )
-  await page.getByRole('link', { name: 'TrailPlan' }).click()
+  await page.getByRole('link', { name: 'Sightpace' }).click()
   await page
     .getByRole('alertdialog')
     .getByRole('heading', { name: 'Save a copy to your trips?' })
@@ -643,7 +643,7 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
   })
 
   // Assert
-  expect(resetTitle).toBe('A day in Porto')
+  expect(resetTitle).toBe('A day in Bandung')
   expect(signInBackHref).toBe('/demo')
   expect(stored.title).toBe(title)
   expect(sampleTripCountBeforeCopy).toBe(0)
@@ -654,7 +654,7 @@ it('edits the public sample, confirms reset, preserves sign-in return data, and 
   expect(mobileTimelineVisible).toBe(true)
   expect(mobileListHidden).toBe(true)
   expect(timelineEditValue).toBe('Lunch')
-  expect(stored.destination).toBe('Porto, Portugal')
+  expect(stored.destination).toBe('Bandung, Indonesia')
   expect(stored.days[0]?.activities).toHaveLength(6)
   expect(
     stored.days[0]?.activities.find((activity) => activity.title === 'Lunch')?.fixedStartMinute,
