@@ -1,7 +1,7 @@
 import { z } from 'zod'
+import { PRIVATE_STORAGE_PREFIX } from '@/lib/brand'
 import { type TripEditorDraft, tripEditorRecoveryDraftSchema } from './editor-contract'
 
-const recoveryKeyPrefix = 'trailplan:private:'
 const recoveryLifetimeMs = 24 * 60 * 60 * 1000
 const maximumClockSkewMs = 5 * 60 * 1000
 const maximumRecordLength = 1_000_000
@@ -24,7 +24,7 @@ export type RecoveryReadResult =
   | { kind: 'unavailable' }
 
 function recoveryKey(userId: string, tripId: string) {
-  return `${recoveryKeyPrefix}${userId}:${tripId}:draft`
+  return `${PRIVATE_STORAGE_PREFIX}${userId}:${tripId}:draft`
 }
 
 export function readTripRecoveryDraft(
