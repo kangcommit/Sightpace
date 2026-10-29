@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
-import { afterAll, beforeAll, beforeEach, expect, inject, it } from 'vitest'
-import { getTrip, listTrips } from '@/features/trips/server/queries'
+import { afterAll, beforeAll, beforeEach, expect, inject, it, vi } from 'vitest'
 import { PrismaClient } from '@/generated/prisma/client'
 import { createSampleCopy, createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
 
 const url = inject('databaseUrl')
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }), log: [] })
 const sql = new Pool({ connectionString: url })
+type TripQueries = typeof import('@/features/trips/server/queries')
+let getTrip: TripQueries['getTrip']
+let listTrips: TripQueries['listTrips']
 const ownerA = 'storage-owner-a'
 const ownerB = 'storage-owner-b'
 let tripId: string
@@ -17,6 +19,11 @@ let firstId: string
 let secondId: string
 
 beforeAll(async () => {
+  // The app's default Prisma client validates DATABASE_URL during module initialization.
+  // Set it to the disposable fixture before importing the query module; CI has no .env.
+  vi.stubEnv('DATABASE_URL', url)
+  ;({ getTrip, listTrips } = await import('@/features/trips/server/queries'))
+
   await db.user.createMany({
     data: [
       { id: ownerA, name: 'Synthetic A', email: 'storage-a@example.test' },
@@ -66,6 +73,7 @@ beforeEach(async () => {
 afterAll(async () => {
   await db.$disconnect()
   await sql.end()
+  vi.unstubAllEnvs()
 })
 
 function receipt(mutationId = randomUUID()) {
