@@ -14,8 +14,8 @@ const activityIds = [
 export function sampleTrip(date: string): InitialTrip {
   return {
     id: tripId,
-    title: 'A day in Porto',
-    destination: 'Porto, Portugal',
+    title: 'A day in Bandung',
+    destination: 'Bandung, Indonesia',
     revision: 1,
     days: [
       {
@@ -27,42 +27,42 @@ export function sampleTrip(date: string): InitialTrip {
           {
             id: activityIds[0],
             title: 'Breakfast',
-            placeLabel: 'Café in Porto',
+            placeLabel: 'Warung Kopi Purnama',
             durationMinutes: 45,
             fixedStartMinute: null,
           },
           {
             id: activityIds[1],
-            title: 'National Museum',
-            placeLabel: 'Porto',
+            title: 'Visit the Geological Museum',
+            placeLabel: 'Geological Museum, Bandung',
             durationMinutes: 90,
             fixedStartMinute: null,
           },
           {
             id: activityIds[2],
             title: 'Lunch',
-            placeLabel: 'Riverside restaurant',
+            placeLabel: 'Braga Permai Restaurant',
             durationMinutes: 45,
             fixedStartMinute: 720,
           },
           {
             id: activityIds[3],
-            title: 'Riverside walk',
-            placeLabel: 'Douro River',
+            title: 'Walk along Braga Street',
+            placeLabel: 'Braga Street',
             durationMinutes: 50,
             fixedStartMinute: null,
           },
           {
             id: activityIds[4],
-            title: 'Gallery visit',
-            placeLabel: 'Porto',
+            title: 'Visit the Asian-African Conference Museum',
+            placeLabel: 'Asia-Africa Street',
             durationMinutes: 75,
             fixedStartMinute: null,
           },
           {
             id: activityIds[5],
-            title: 'Bolhão Market',
-            placeLabel: 'Porto',
+            title: 'Shop at Pasar Baru Trade Center',
+            placeLabel: 'Otto Iskandar Dinata Street, Bandung',
             durationMinutes: 40,
             fixedStartMinute: null,
           },

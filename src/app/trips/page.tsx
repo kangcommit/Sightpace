@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { MapPinned } from 'lucide-react'
+import { CalendarDays, MapPin, MapPinned, Plus } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -59,17 +59,23 @@ export default async function TripsPage({
   const result = await listTrips(user.data.id, params.page)
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
       <PrivateSession userId={user.data.id}>
         <PrivatePageHeader href={appRoutes.home} />
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">My trips</h1>
+        <header className="flex flex-wrap items-end justify-between gap-4 pt-4">
+          <div className="flex flex-col gap-2">
+            <p className="text-primary text-sm font-semibold">Your travel plans</p>
+            <h1 className="text-3xl font-semibold tracking-tight">My trips</h1>
+            <p className="text-muted-foreground max-w-md leading-relaxed">
+              Pick up where you left off, or start planning somewhere new.
+            </p>
+          </div>
           <Button
             render={<Link href={appRoutes.newTrip} />}
             nativeButton={false}
             className="min-h-11"
           >
-            New trip
+            <Plus aria-hidden="true" /> New trip
           </Button>
         </header>
         {!result.ok ? (
@@ -92,7 +98,7 @@ export default async function TripsPage({
             </Button>
           </section>
         ) : result.data.items.length === 0 ? (
-          <Empty>
+          <Empty className="bg-card rounded-2xl px-6 py-12 sm:py-16">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <MapPinned aria-hidden="true" />
@@ -114,29 +120,41 @@ export default async function TripsPage({
           </Empty>
         ) : (
           <>
-            <ItemGroup aria-label="Saved trips" className="gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-lg font-semibold">Saved trips</h2>
+              <p className="text-muted-foreground text-sm">Open a trip to explore its days.</p>
+            </div>
+            <ItemGroup aria-label="Saved trips" className="grid gap-4 sm:grid-cols-2">
               {result.data.items.map((trip) => (
                 <li key={trip.id} className="m-0 p-0">
-                  <Item className="items-start justify-between gap-4">
+                  <Item className="bg-card h-full flex-nowrap items-start justify-between gap-3 rounded-xl p-4 sm:p-5">
                     <ItemContent className="min-w-0">
                       <Link
-                        className="focus-visible:ring-ring flex min-h-11 min-w-0 flex-col gap-0.5 rounded-sm hover:opacity-80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        className="focus-visible:ring-ring flex min-h-24 min-w-0 flex-col items-start gap-4 rounded-sm hover:opacity-80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                         href={appRoutes.trip(trip.id)}
                       >
-                        <ItemTitle
-                          role="heading"
-                          aria-level={2}
-                          className="line-clamp-none w-full text-lg whitespace-normal"
-                        >
-                          {trip.title}
-                        </ItemTitle>
-                        <ItemDescription className="line-clamp-none">
-                          {trip.destination} ·{' '}
-                          {trip.startDate && trip.endDate
-                            ? trip.startDate === trip.endDate
-                              ? displayDate(trip.startDate)
-                              : `${displayDate(trip.startDate)} – ${displayDate(trip.endDate)}`
-                            : 'No dates planned yet'}
+                        <div className="flex w-full items-start justify-between gap-3">
+                          <ItemTitle
+                            role="heading"
+                            aria-level={3}
+                            className="line-clamp-none w-full text-xl whitespace-normal"
+                          >
+                            {trip.title}
+                          </ItemTitle>
+                        </div>
+                        <ItemDescription className="line-clamp-none flex flex-col gap-2">
+                          <span className="flex items-start gap-2">
+                            <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                            {trip.destination}
+                          </span>
+                          <span className="flex items-start gap-2">
+                            <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                            {trip.startDate && trip.endDate
+                              ? trip.startDate === trip.endDate
+                                ? displayDate(trip.startDate)
+                                : `${displayDate(trip.startDate)} – ${displayDate(trip.endDate)}`
+                              : 'No dates planned yet'}
+                          </span>
                         </ItemDescription>
                       </Link>
                     </ItemContent>

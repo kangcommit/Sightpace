@@ -25,43 +25,46 @@ export function TripEditorTripDetails({
   }
 
   return (
-    <section className="flex flex-col gap-4" aria-label="Trip details">
-      <h1 className="text-2xl font-semibold">{draft.title || 'Untitled trip'}</h1>
+    <section className="flex flex-col gap-4 pt-3" aria-label="Trip details">
+      <p className="text-primary text-sm font-semibold">Your itinerary</p>
+      <h1 className="text-3xl font-semibold tracking-tight">{draft.title || 'Untitled trip'}</h1>
       <p className="text-muted-foreground">{draft.destination}</p>
-      <Field>
-        <FieldLabel htmlFor="trip-title">Trip name</FieldLabel>
-        <Input
-          id="trip-title"
-          maxLength={120}
-          required
-          aria-invalid={titleInvalid}
-          aria-describedby={titleInvalid ? 'trip-title-error' : undefined}
-          value={draft.title}
-          onChange={handleTitleChange}
-        />
-        {titleInvalid ? (
-          <p id="trip-title-error" className="text-destructive text-sm">
-            Enter a trip name.
-          </p>
-        ) : null}
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="trip-destination">Destination label</FieldLabel>
-        <Input
-          id="trip-destination"
-          maxLength={120}
-          required
-          aria-invalid={destinationInvalid}
-          aria-describedby={destinationInvalid ? 'trip-destination-error' : undefined}
-          value={draft.destination}
-          onChange={handleDestinationChange}
-        />
-        {destinationInvalid ? (
-          <p id="trip-destination-error" className="text-destructive text-sm">
-            Enter a destination label.
-          </p>
-        ) : null}
-      </Field>
+      <div className="grid gap-4 md:max-w-3xl md:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="trip-title">Trip name</FieldLabel>
+          <Input
+            id="trip-title"
+            maxLength={120}
+            required
+            aria-invalid={titleInvalid}
+            aria-describedby={titleInvalid ? 'trip-title-error' : undefined}
+            value={draft.title}
+            onChange={handleTitleChange}
+          />
+          {titleInvalid ? (
+            <p id="trip-title-error" className="text-destructive text-sm">
+              Enter a trip name.
+            </p>
+          ) : null}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="trip-destination">Destination label</FieldLabel>
+          <Input
+            id="trip-destination"
+            maxLength={120}
+            required
+            aria-invalid={destinationInvalid}
+            aria-describedby={destinationInvalid ? 'trip-destination-error' : undefined}
+            value={draft.destination}
+            onChange={handleDestinationChange}
+          />
+          {destinationInvalid ? (
+            <p id="trip-destination-error" className="text-destructive text-sm">
+              Enter a destination label.
+            </p>
+          ) : null}
+        </Field>
+      </div>
     </section>
   )
 }

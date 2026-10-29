@@ -78,7 +78,7 @@ export function useTripAutosave({
   const debounceTimer = useRef<number | null>(null)
   const revisionRef = useRef(initialRevision)
   const performSaveRef = useRef<(pending: PendingSave) => Promise<void>>(async () => {})
-  const dirty = enabled && JSON.stringify(draft) !== JSON.stringify(savedDraft)
+  const dirty = enabled && JSON.stringify(normalizedDraft(draft)) !== JSON.stringify(savedDraft)
 
   async function performSave(pending: PendingSave) {
     if (inFlight.current) return
@@ -114,9 +114,7 @@ export function useTripAutosave({
       revisionRef.current = result.revision
       const persistedDraft = withServerIds(pending.request.snapshot, result.ids)
       setSavedDraft(persistedDraft)
-      setDraft((current) =>
-        current === pending.sourceDraft ? persistedDraft : withServerIds(current, result.ids),
-      )
+      setDraft((current) => withServerIds(current, result.ids))
       setStatus('idle')
       setError(null)
     } catch {

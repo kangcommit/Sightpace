@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { isDateTodayOrLater } from '../shared/date-rules'
 
 const minute = z.number().int()
 const uuid = z.uuid().optional()
@@ -60,6 +59,7 @@ export const tripEditorDraftSchema = tripEditorRecoveryDraftSchema
 
     for (const [dayIndex, day] of draft.days.entries()) {
       if (
+        !day.date ||
         day.startMinute >= day.finishMinute ||
         dates.has(day.date) ||
         (day.id && dayIds.has(day.id)) ||
@@ -73,13 +73,6 @@ export const tripEditorDraftSchema = tripEditorRecoveryDraftSchema
       dates.add(day.date)
       allKeys.add(day.key)
       if (day.id) dayIds.add(day.id)
-
-      if (!isDateTodayOrLater(day.date))
-        context.addIssue({
-          code: 'custom',
-          path: ['days', dayIndex, 'date'],
-          message: 'Choose today or a future date.',
-        })
 
       const keys = new Set<string>()
       for (const [activityIndex, activity] of day.activities.entries()) {

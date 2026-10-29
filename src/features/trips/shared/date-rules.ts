@@ -1,4 +1,4 @@
-/** TrailPlan compares date-only values against the current UTC calendar date. */
+/** Date-only values are compared against the current UTC calendar date. */
 export function todayDate() {
   return new Date().toISOString().slice(0, 10)
 }
