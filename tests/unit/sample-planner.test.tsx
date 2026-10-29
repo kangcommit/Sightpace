@@ -10,6 +10,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('@/features/trips/server/create-sample-copy-action', () => ({
   createSampleCopyAction: mocks.create,
 }))
+vi.mock('@/features/trips/server/save-trip-action', () => ({ saveTripEditorAction: vi.fn() }))
 
 afterEach(() => {
   cleanup()
