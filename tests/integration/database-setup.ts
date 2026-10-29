@@ -19,9 +19,9 @@ declare module 'vitest' {
 // Never accept DATABASE_URL or import application env/Prisma initialization here.
 // Only a container created by this invocation can be migrated or removed.
 export default async function setup(project: TestProject) {
-  const container = `trailplan-test-${randomUUID()}`
+  const container = `sightpace-test-${randomUUID()}`
   const password = randomBytes(24).toString('hex')
-  const temporary = await mkdtemp(join(tmpdir(), 'trailplan-db-'))
+  const temporary = await mkdtemp(join(tmpdir(), 'sightpace-db-'))
   let stage = 'container startup'
   let created = false
   let client: Client | undefined
@@ -47,7 +47,7 @@ export default async function setup(project: TestProject) {
         '--name',
         container,
         '--label',
-        'trailplan.fixture=true',
+        'sightpace.fixture=true',
         '--publish',
         '127.0.0.1::5432',
         '--tmpfs',
@@ -55,9 +55,9 @@ export default async function setup(project: TestProject) {
         '--env',
         'POSTGRES_PASSWORD',
         '--env',
-        'POSTGRES_USER=trailplan_test',
+        'POSTGRES_USER=sightpace_test',
         '--env',
-        'POSTGRES_DB=trailplan_test',
+        'POSTGRES_DB=sightpace_test',
         image,
       ],
       { env: { ...process.env, POSTGRES_PASSWORD: password }, timeout: 120_000 },
@@ -70,7 +70,7 @@ export default async function setup(project: TestProject) {
 
     if (!port) throw new Error('Expected a loopback-only fixture port')
 
-    const databaseUrl = `postgresql://trailplan_test:${password}@127.0.0.1:${port}/trailplan_test`
+    const databaseUrl = `postgresql://sightpace_test:${password}@127.0.0.1:${port}/sightpace_test`
     let ready = false
 
     for (let attempt = 0; attempt < 60; attempt++) {
@@ -80,9 +80,9 @@ export default async function setup(project: TestProject) {
           container,
           'pg_isready',
           '-U',
-          'trailplan_test',
+          'sightpace_test',
           '-d',
-          'trailplan_test',
+          'sightpace_test',
         ])
         ready = true
         break
@@ -151,10 +151,10 @@ export default async function setup(project: TestProject) {
     // Also exercise the full chain in one deploy on a second empty database.
     stage = 'fresh migration chain'
 
-    await client.query('CREATE DATABASE trailplan_fresh')
+    await client.query('CREATE DATABASE sightpace_fresh')
 
     const freshUrl = new URL(databaseUrl)
-    freshUrl.pathname = '/trailplan_fresh'
+    freshUrl.pathname = '/sightpace_fresh'
 
     await migrate(freshUrl.toString(), fullConfig)
 

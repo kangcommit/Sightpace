@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('renders the TrailPlan introduction and primary actions', async ({ page }) => {
+test('renders the Sightpace introduction and primary actions', async ({ page }) => {
   // Arrange
   const route = '/'
 
@@ -8,13 +8,13 @@ test('renders the TrailPlan introduction and primary actions', async ({ page }) 
   await page.goto(route)
 
   // Assert
-  await expect(page).toHaveTitle(/TrailPlan/i)
+  await expect(page).toHaveTitle(/Sightpace/i)
   await expect(
     page.getByRole('heading', { name: 'See what fits into your travel day' }),
   ).toBeVisible()
   await expect(page.getByRole('link', { name: 'Try sample' })).toHaveAttribute('href', '/demo')
   await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/sign-in')
-  await expect(page.getByRole('heading', { name: 'A day in Porto' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'A day in Bandung' })).toBeVisible()
 })
 
 test('keeps the landing page usable without horizontal scrolling at 320px', async ({ page }) => {

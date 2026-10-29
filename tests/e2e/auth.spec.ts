@@ -28,7 +28,7 @@ for (const width of [360, 1280]) {
 
       await page.keyboard.press('Tab')
       const logoFocused = await page
-        .getByRole('link', { name: 'TrailPlan', exact: true })
+        .getByRole('link', { name: 'Sightpace', exact: true })
         .evaluate((element) => element === document.activeElement)
 
       await page.keyboard.press('Tab')
