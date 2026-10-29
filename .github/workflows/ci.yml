@@ -33,11 +33,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run static checks and build
-        run: pnpm run verify
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Validate Prisma schema
+        run: pnpm db:validate
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Verify migrations and storage with disposable PostgreSQL
+        run: pnpm test:integration
+
+      - name: Run static checks and build
+        run: pnpm run verify
 
       - name: Run end-to-end tests
         run: pnpm test:e2e

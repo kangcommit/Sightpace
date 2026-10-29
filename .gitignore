@@ -17,6 +17,8 @@
 
 # Next.js build output.
 /.next/
+/.next-e2e/
+/.next-integration/
 /out/
 
 # Environment files (commit the example only).
@@ -47,3 +49,5 @@ pnpm-debug.log*
 # TypeScript-generated files.
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma

@@ -1,0 +1,8 @@
+/** Date-only values are compared against the current UTC calendar date. */
+export function todayDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export function isDateTodayOrLater(date: string, today = todayDate()) {
+  return date >= today
+}

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -18,7 +18,8 @@
       "!.output",
       "!coverage",
       "!playwright-report",
-      "!test-results"
+      "!test-results",
+      "!pnpm-lock.yaml"
     ]
   },
   "formatter": {

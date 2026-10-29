@@ -1,23 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-
-import { ThemeProvider } from '@/components/theme-provider'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { APP_NAME } from '@/lib/brand'
 
 import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Next.js Frontend Template',
-    template: '%s | Next.js Frontend Template',
+    default: `${APP_NAME} — Travel day planner`,
+    template: `%s | ${APP_NAME}`,
   },
-  description: 'A production-ready Next.js application baseline.',
+  description: 'Plan stops in order, add travel estimates, and see how fixed bookings fit.',
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark light',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
-  ],
+  colorScheme: 'light',
+  themeColor: '#f8f7f2',
 }
 
 export default function RootLayout({
@@ -26,9 +23,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <TooltipProvider delay={500}>{children}</TooltipProvider>
       </body>
     </html>
   )

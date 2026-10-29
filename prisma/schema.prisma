@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String            @id
+  name             String
+  email            String
+  emailVerified    Boolean           @default(false)
+  image            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  trips            Trip[]
+  mutationReceipts MutationReceipt[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// SQL CHECK constraints live in the domain migration; preserve them in future migrations.
+model Trip {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  destination String
+  revision    Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  days        Day[]
+
+  @@index([userId, updatedAt(sort: Desc), id(sort: Desc)])
+  @@map("trip")
+}
+
+model Day {
+  id              String           @id @default(uuid()) @db.Uuid
+  tripId          String           @db.Uuid
+  trip            Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  date            DateTime         @db.Date
+  startMinute     Int
+  finishMinute    Int
+  activities      Activity[]
+  travelEstimates TravelEstimate[]
+
+  @@unique([tripId, date])
+  @@map("day")
+}
+
+model Activity {
+  id               String           @id @default(uuid()) @db.Uuid
+  dayId            String           @db.Uuid
+  day              Day              @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  title            String
+  placeLabel       String?
+  durationMinutes  Int
+  fixedStartMinute Int?
+  position         Int
+  outgoingTravel   TravelEstimate[] @relation("TravelFrom")
+  incomingTravel   TravelEstimate[] @relation("TravelTo")
+
+  @@unique([dayId, position])
+  @@unique([id, dayId])
+  @@map("activity")
+}
+
+model TravelEstimate {
+  dayId          String   @db.Uuid
+  fromActivityId String   @db.Uuid
+  toActivityId   String   @db.Uuid
+  minutes        Int
+  day            Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  fromActivity   Activity @relation("TravelFrom", fields: [fromActivityId, dayId], references: [id, dayId], onDelete: Cascade, onUpdate: NoAction)
+  toActivity     Activity @relation("TravelTo", fields: [toActivityId, dayId], references: [id, dayId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([dayId, fromActivityId, toActivityId])
+  @@index([fromActivityId, dayId])
+  @@index([toActivityId, dayId])
+  @@map("travel_estimate")
+}
+
+enum MutationOperation {
+  CREATE_TRIP
+  SAVE_TRIP
+  DELETE_TRIP
+}
+
+enum MutationResultKind {
+  CREATED
+  SAVED
+  DELETED
+}
+
+model MutationReceipt {
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mutationId     String             @db.Uuid
+  operation      MutationOperation
+  // Intentionally not a Trip FK: delete acknowledgements must survive trip deletion.
+  targetTripId   String             @db.Uuid
+  payloadHash    String             @db.VarChar(64)
+  resultRevision Int?
+  resultKind     MutationResultKind
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+
+  @@id([userId, mutationId])
+  @@index([createdAt])
+  @@map("mutation_receipt")
+}

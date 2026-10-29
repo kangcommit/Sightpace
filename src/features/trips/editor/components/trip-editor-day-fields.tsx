@@ -1,0 +1,116 @@
+import { Trash2 } from 'lucide-react'
+import type { ChangeEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { EditorDay } from '../trip-editor-utils'
+import { fromTime, toTime, validDate } from '../trip-editor-utils'
+
+export function TripEditorDayFields({
+  day,
+  duplicateDate,
+  onDateChange,
+  onStartChange,
+  onFinishChange,
+  onDelete,
+}: {
+  day: EditorDay
+  duplicateDate: boolean
+  onDateChange: (date: string) => void
+  onStartChange: (minute: number) => void
+  onFinishChange: (minute: number) => void
+  onDelete: () => void
+}) {
+  const invalidDate = !validDate(day.date) || duplicateDate
+  const invalidHours =
+    day.startMinute > 1438 || day.finishMinute < 1 || day.startMinute >= day.finishMinute
+
+  function handleDateChange(event: ChangeEvent<HTMLInputElement>) {
+    onDateChange(event.target.value)
+  }
+
+  function handleStartChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.value) onStartChange(fromTime(event.target.value))
+  }
+
+  function handleFinishChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.value) onFinishChange(fromTime(event.target.value))
+  }
+
+  return (
+    <div className="flex flex-col gap-3 md:flex-row md:items-end">
+      <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-3">
+        <Field>
+          <FieldLabel htmlFor="day-date">Day date</FieldLabel>
+          <Input
+            id="day-date"
+            type="date"
+            required
+            className="block!"
+            value={day.date}
+            aria-invalid={invalidDate}
+            aria-describedby={invalidDate ? 'day-date-error' : undefined}
+            onChange={handleDateChange}
+          />
+          {invalidDate ? (
+            <p id="day-date-error" className="text-destructive text-sm">
+              {!validDate(day.date) ? 'Enter a valid day date.' : 'A day already uses this date.'}
+            </p>
+          ) : null}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="day-start">Day starts at</FieldLabel>
+          <Input
+            id="day-start"
+            type="time"
+            className="block!"
+            max="23:58"
+            value={toTime(day.startMinute)}
+            aria-invalid={day.startMinute > 1438 || day.startMinute >= day.finishMinute}
+            aria-describedby={invalidHours ? 'day-hours-error' : undefined}
+            onChange={handleStartChange}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="day-finish">Day finishes at</FieldLabel>
+          <Input
+            id="day-finish"
+            type="time"
+            className="block!"
+            min="00:01"
+            value={toTime(day.finishMinute)}
+            aria-invalid={day.finishMinute < 1 || day.startMinute >= day.finishMinute}
+            aria-describedby={invalidHours ? 'day-hours-error' : undefined}
+            onChange={handleFinishChange}
+          />
+          {invalidHours ? (
+            <p id="day-hours-error" className="text-destructive text-sm">
+              {day.startMinute > 1438
+                ? 'Choose a start time before 23:59.'
+                : day.finishMinute < 1
+                  ? 'Choose a finish time after 00:00.'
+                  : 'Finish time must be later than start time.'}
+            </p>
+          ) : null}
+        </Field>
+      </div>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-h-11 min-w-11 self-start md:mt-7"
+              aria-label="Delete day"
+              onClick={onDelete}
+            />
+          }
+        >
+          <Trash2 aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent>Delete day</TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}

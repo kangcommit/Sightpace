@@ -44,11 +44,15 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
+    ".next-e2e/types/**/*.ts",
+    ".next-e2e/dev/types/**/*.ts",
 
     // Application and tool source files.
     "**/*.ts",
     "**/*.tsx",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-integration/types/**/*.ts",
+    ".next-integration/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
