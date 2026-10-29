@@ -1,5 +1,5 @@
 export const APP_NAME = 'Sightpace'
-export const APP_SLUG = 'sightpace'
+const APP_SLUG = 'sightpace'
 
 export const PRIVATE_STORAGE_PREFIX = `${APP_SLUG}:private:`
 export const PRIVATE_STORAGE_OWNER_KEY = `${PRIVATE_STORAGE_PREFIX}owner`
