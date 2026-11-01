@@ -5,11 +5,12 @@ import { SamplePlanner } from '@/features/trips/sample/sample-planner'
 import { todayDate } from '@/features/trips/shared/date-rules'
 import { calculateDaySchedule } from '@/lib/scheduling'
 
-const mocks = vi.hoisted(() => ({ push: vi.fn(), create: vi.fn() }))
+const mocks = vi.hoisted(() => ({ push: vi.fn(), create: vi.fn(), save: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('@/features/trips/server/create-sample-copy-action', () => ({
   createSampleCopyAction: mocks.create,
 }))
+vi.mock('@/features/trips/server/save-trip-action', () => ({ saveTripEditorAction: mocks.save }))
 
 afterEach(() => {
   cleanup()
