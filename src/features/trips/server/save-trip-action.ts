@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/session'
 import { saveTrip } from '@/lib/trip-transactions'
 import { tripEditorDraftSchema } from '../editor/editor-contract'
@@ -111,12 +111,22 @@ export async function saveTripEditorAction(input: unknown): Promise<SaveTripEdit
     }),
   }
 
-  const result = await saveTrip(prisma, user.data.id, {
-    tripId: parsed.data.tripId,
-    mutationId: parsed.data.mutationId,
-    expectedRevision: parsed.data.expectedRevision,
-    snapshot,
-  })
+  let result: Awaited<ReturnType<typeof saveTrip>>
+  try {
+    result = await saveTrip(getPrisma(), user.data.id, {
+      tripId: parsed.data.tripId,
+      mutationId: parsed.data.mutationId,
+      expectedRevision: parsed.data.expectedRevision,
+      snapshot,
+    })
+  } catch {
+    return {
+      ok: false,
+      code: 'TEMPORARILY_UNAVAILABLE',
+      message:
+        'We couldn’t confirm whether your trip saved. Reload to check before saving again; your edits are still here.',
+    }
+  }
 
   if (!result.ok)
     return {

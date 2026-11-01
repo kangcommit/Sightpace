@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type { PrismaClient } from '@/generated/prisma/client'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 const pageSchema = z
   .string()
@@ -31,7 +31,7 @@ export type TripListResult =
 export async function listTrips(
   ownerId: string,
   pageValue?: string,
-  db: PrismaClient = prisma,
+  db?: PrismaClient,
 ): Promise<TripListResult> {
   const parsedPage =
     pageValue === undefined ? { success: true as const, data: 1 } : pageSchema.safeParse(pageValue)
@@ -39,11 +39,12 @@ export async function listTrips(
   if (!parsedPage.success) return { ok: false, error: 'VALIDATION_ERROR' }
 
   try {
+    const client = db ?? getPrisma()
     const where = { userId: ownerId }
-    const totalItems = await db.trip.count({ where })
+    const totalItems = await client.trip.count({ where })
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
     const page = Math.min(parsedPage.data, totalPages)
-    const rows = await db.trip.findMany({
+    const rows = await client.trip.findMany({
       where,
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       skip: (page - 1) * pageSize,
@@ -76,11 +77,12 @@ export async function listTrips(
 }
 
 /** Owner-filtered snapshot read; missing and foreign IDs intentionally return the same result. */
-export async function getTrip(ownerId: string, tripId: string, db: PrismaClient = prisma) {
+export async function getTrip(ownerId: string, tripId: string, db?: PrismaClient) {
   if (!z.uuid().safeParse(tripId).success) return { ok: true as const, data: null }
 
   try {
-    const trip = await db.$transaction(
+    const client = db ?? getPrisma()
+    const trip = await client.$transaction(
       (tx) =>
         tx.trip.findFirst({
           where: { id: tripId, userId: ownerId },

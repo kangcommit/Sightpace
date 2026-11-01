@@ -2,7 +2,7 @@
 
 import { redirect, unstable_rethrow } from 'next/navigation'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 import { createTrip, deleteTrip } from '@/lib/trip-transactions'
@@ -167,7 +167,7 @@ export async function createTripAction(
   }
 
   try {
-    const result = await createTrip(prisma, user.data.id, {
+    const result = await createTrip(getPrisma(), user.data.id, {
       mutationId: parsed.data.mutationId,
       title: parsed.data.title,
       destination: parsed.data.destination,
@@ -219,7 +219,7 @@ export async function deleteTripAction(
     return { message: 'We couldn’t delete this trip. Refresh your trips and try again.' }
 
   try {
-    const result = await deleteTrip(prisma, user.data.id, {
+    const result = await deleteTrip(getPrisma(), user.data.id, {
       tripId,
       mutationId,
       expectedRevision,
