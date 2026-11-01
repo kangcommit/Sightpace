@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
   unstable_rethrow: mocks.unstableRethrow,
 }))
 vi.mock('@/lib/session', () => ({ requireUser: mocks.requireUser }))
-vi.mock('@/lib/prisma', () => ({ prisma: {} }))
+vi.mock('@/lib/prisma', () => ({ getPrisma: vi.fn(() => ({})) }))
 vi.mock('@/lib/trip-transactions', () => ({
   createTrip: mocks.createTrip,
   deleteTrip: mocks.deleteTrip,

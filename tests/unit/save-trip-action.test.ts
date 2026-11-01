@@ -2,18 +2,22 @@ import { beforeEach, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   requireUser: vi.fn(),
+  getPrisma: vi.fn(() => ({})),
   saveTrip: vi.fn(),
   revalidatePath: vi.fn(),
 }))
 vi.mock('@/lib/session', () => ({ requireUser: mocks.requireUser }))
-vi.mock('@/lib/prisma', () => ({ prisma: {} }))
+vi.mock('@/lib/prisma', () => ({ getPrisma: mocks.getPrisma }))
 vi.mock('@/lib/trip-transactions', () => ({ saveTrip: mocks.saveTrip }))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
 import { saveTripEditorAction } from '@/features/trips/server/save-trip-action'
 import { todayDate } from '@/features/trips/shared/date-rules'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.getPrisma.mockImplementation(() => ({}))
+})
 
 const request = {
   tripId: 'c0000000-0000-4000-8000-000000000001',
@@ -62,6 +66,26 @@ it('requires a verified session before calling the owner-scoped storage boundary
     ok: false,
     code: 'UNAUTHENTICATED',
     message: 'Sign in to save your changes.',
+  })
+  expect(mocks.saveTrip).not.toHaveBeenCalled()
+})
+
+it('retains the draft with a retryable error when database configuration is unavailable', async () => {
+  // Arrange
+  mocks.requireUser.mockResolvedValue({ ok: true, data: { id: 'verified-owner' } })
+  mocks.getPrisma.mockImplementation(() => {
+    throw new Error('Invalid server environment')
+  })
+
+  // Act
+  const result = await saveTripEditorAction(request)
+
+  // Assert
+  expect(result).toEqual({
+    ok: false,
+    code: 'TEMPORARILY_UNAVAILABLE',
+    message:
+      'We couldn’t confirm whether your trip saved. Reload to check before saving again; your edits are still here.',
   })
   expect(mocks.saveTrip).not.toHaveBeenCalled()
 })
