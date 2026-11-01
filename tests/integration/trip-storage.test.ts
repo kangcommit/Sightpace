@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, expect, inject, it } from 'vitest'
-import { getTrip, listTrips } from '@/features/trips/server/queries'
 import { PrismaClient } from '@/generated/prisma/client'
 import { createSampleCopy, createTrip, deleteTrip, saveTrip } from '@/lib/trip-transactions'
 
 const url = inject('databaseUrl')
+const previousDatabaseUrl = process.env.DATABASE_URL
+process.env.DATABASE_URL = url
+const { getTrip, listTrips } = await import('@/features/trips/server/queries')
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }), log: [] })
 const sql = new Pool({ connectionString: url })
 const ownerA = 'storage-owner-a'
@@ -64,8 +66,13 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
-  await db.$disconnect()
-  await sql.end()
+  try {
+    await db.$disconnect()
+    await sql.end()
+  } finally {
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = previousDatabaseUrl
+  }
 })
 
 function receipt(mutationId = randomUUID()) {
