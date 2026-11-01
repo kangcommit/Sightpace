@@ -44,19 +44,22 @@ afterEach(() => {
 })
 
 describe('Prisma initialization', () => {
-  it('rejects missing database configuration before constructing a client', async () => {
+  it('defers database configuration validation until a client is requested', async () => {
     // Arrange
     vi.stubEnv('DATABASE_URL', '')
 
     // Act
+    const module = await import('@/lib/prisma')
+    const clientWasNotConstructedOnImport = mocks.client.mock.calls.length === 0
     let validationError: unknown
     try {
-      await import('@/lib/prisma')
+      module.getPrisma()
     } catch (error) {
       validationError = error
     }
 
     // Assert
+    expect(clientWasNotConstructedOnImport).toBe(true)
     expect(String(validationError)).toContain('DATABASE_URL: must not be blank')
     expect(mocks.client).not.toHaveBeenCalled()
     expect(mocks.adapter).not.toHaveBeenCalled()
@@ -65,13 +68,15 @@ describe('Prisma initialization', () => {
   it('reuses the development client across module reloads', async () => {
     // Arrange
     const first = await import('@/lib/prisma')
+    const firstClient = first.getPrisma()
 
     // Act
     vi.resetModules()
     const second = await import('@/lib/prisma')
+    const secondClient = second.getPrisma()
 
     // Assert
-    expect(second.prisma).toBe(first.prisma)
+    expect(secondClient).toBe(firstClient)
     expect(mocks.client).toHaveBeenCalledTimes(1)
     expect(mocks.adapter).toHaveBeenCalledTimes(1)
   })
@@ -81,7 +86,8 @@ describe('Prisma initialization', () => {
     vi.stubEnv('NODE_ENV', 'production')
 
     // Act
-    await import('@/lib/prisma')
+    const { getPrisma } = await import('@/lib/prisma')
+    getPrisma()
 
     // Assert
     expect(globalForPrisma.prisma).toBeUndefined()
