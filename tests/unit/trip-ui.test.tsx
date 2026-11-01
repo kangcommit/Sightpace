@@ -1,8 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { CreateTripForm } from '@/features/trips/forms/create-trip-form'
 import { DeleteTripButton } from '@/features/trips/forms/delete-trip-control'
 import type { CreateTripState } from '@/features/trips/server/actions'
+
+const mocks = vi.hoisted(() => ({ createTripAction: vi.fn(), deleteTripAction: vi.fn() }))
+vi.mock('@/features/trips/server/actions', () => mocks)
 
 afterEach(cleanup)
 
