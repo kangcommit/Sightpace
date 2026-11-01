@@ -3,15 +3,17 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { getDatabaseEnv } from '@/lib/env'
 import { PrismaClient } from '../generated/prisma/client'
 
-const { DATABASE_URL: connectionString } = getDatabaseEnv()
-
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
+let client: PrismaClient | undefined
 
-const prisma =
-  globalForPrisma.prisma ?? new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
+export function getPrisma() {
+  if (client) return client
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
+  const { DATABASE_URL: connectionString } = getDatabaseEnv()
+  client =
+    globalForPrisma.prisma ?? new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
+
+  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = client
+
+  return client
 }
-
-export { prisma }

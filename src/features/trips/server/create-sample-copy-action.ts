@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/session'
 import { createSampleCopy } from '@/lib/trip-transactions'
 import { tripEditorDraftSchema } from '../editor/editor-contract'
@@ -38,27 +38,36 @@ export async function createSampleCopyAction(input: unknown): Promise<CreateSamp
     return { ok: false, code: 'VALIDATION_ERROR', message: 'Check the trip details and try again.' }
 
   const { mutationId, snapshot } = parsed.data
-  const result = await createSampleCopy(prisma, user.data.id, {
-    mutationId,
-    title: snapshot.title.trim(),
-    destination: snapshot.destination.trim(),
-    days: snapshot.days.map((day) => ({
-      key: day.key,
-      date: day.date,
-      startMinute: day.startMinute,
-      finishMinute: day.finishMinute,
-      activities: day.activities.map(
-        ({ key, title, placeLabel, durationMinutes, fixedStartMinute }) => ({
-          key,
-          title: title.trim(),
-          placeLabel: placeLabel.trim(),
-          durationMinutes,
-          fixedStartMinute,
-        }),
-      ),
-      travelEstimates: day.travelEstimates,
-    })),
-  })
+  let result: Awaited<ReturnType<typeof createSampleCopy>>
+  try {
+    result = await createSampleCopy(getPrisma(), user.data.id, {
+      mutationId,
+      title: snapshot.title.trim(),
+      destination: snapshot.destination.trim(),
+      days: snapshot.days.map((day) => ({
+        key: day.key,
+        date: day.date,
+        startMinute: day.startMinute,
+        finishMinute: day.finishMinute,
+        activities: day.activities.map(
+          ({ key, title, placeLabel, durationMinutes, fixedStartMinute }) => ({
+            key,
+            title: title.trim(),
+            placeLabel: placeLabel.trim(),
+            durationMinutes,
+            fixedStartMinute,
+          }),
+        ),
+        travelEstimates: day.travelEstimates,
+      })),
+    })
+  } catch {
+    return {
+      ok: false,
+      code: 'TEMPORARILY_UNAVAILABLE',
+      message: 'We couldn’t save your copy. Your sample is still here; please try again.',
+    }
+  }
 
   if (result.ok) return { ok: true, tripId: result.data.tripId }
   return {

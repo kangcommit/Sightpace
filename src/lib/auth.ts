@@ -5,11 +5,11 @@ import { authOptions } from '@/lib/auth-options'
 
 async function createAuth() {
   const options = authOptions()
-  const { prisma } = await import('@/lib/prisma')
+  const { getPrisma } = await import('@/lib/prisma')
 
   return betterAuth({
     ...options,
-    database: prismaAdapter(prisma, { provider: 'postgresql' }),
+    database: prismaAdapter(getPrisma(), { provider: 'postgresql' }),
     plugins: [nextCookies()],
   })
 }
