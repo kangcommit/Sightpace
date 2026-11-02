@@ -1,8 +1,9 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { CreateTripForm } from '@/features/trips/forms/create-trip-form'
 import { DeleteTripButton } from '@/features/trips/forms/delete-trip-control'
 import type { CreateTripState } from '@/features/trips/server/actions'
+import { todayDate } from '@/features/trips/shared/date-rules'
 
 const mocks = vi.hoisted(() => ({ createTripAction: vi.fn(), deleteTripAction: vi.fn() }))
 vi.mock('@/features/trips/server/actions', () => mocks)
@@ -22,7 +23,7 @@ const initialState: CreateTripState = {
   message: 'Check the highlighted fields and try again.',
 }
 
-it('labels creation fields and shows an associated validation error', () => {
+it('labels creation fields and shows an associated validation error', async () => {
   // Arrange
   render(<CreateTripForm initialState={initialState} minimumDate="2026-10-26" />)
 
@@ -44,8 +45,8 @@ it('labels creation fields and shows an associated validation error', () => {
   expect(screen.queryByText('Check the highlighted fields and try again.')).not.toBeInTheDocument()
   expect(destination).toHaveValue('Lisbon')
   expect(destination).toHaveAttribute('placeholder', 'e.g. Yogyakarta, Indonesia')
-  expect(date).toHaveValue('2026-10-26')
-  expect(date).toHaveAttribute('min', '2026-10-26')
+  await waitFor(() => expect(date).toHaveValue(todayDate()))
+  expect(date).toHaveAttribute('min', todayDate())
   expect(startTime).toHaveValue('')
   expect(startTime).toBeRequired()
   expect(startTime).toHaveAttribute('max', '23:58')
