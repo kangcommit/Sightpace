@@ -52,6 +52,7 @@ function createForm(overrides: Record<string, string> = {}) {
     title: 'Lisbon week',
     destination: 'Lisbon',
     date: initial.values.date,
+    timeZone: 'UTC',
     startTime: '09:00',
     finishTime: '18:00',
     ...overrides,
@@ -86,18 +87,20 @@ describe('private trip actions', () => {
   it('rejects a first day before the current date without creating a trip', async () => {
     // Arrange
     mocks.requireUser.mockResolvedValue({ ok: true, data: { id: 'verified-owner' } })
-    const past = new Date(`${todayDate()}T00:00:00.000Z`)
-    past.setUTCDate(past.getUTCDate() - 1)
-    const form = createForm({ date: past.toISOString().slice(0, 10) })
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-03T12:00:00.000Z'))
+    const date = '2026-11-02'
+    const form = createForm({ date, timeZone: 'UTC' })
 
     // Act
     const result = await createTripAction(initial, form)
 
     // Assert
-    expect(result.values.date).toBe(past.toISOString().slice(0, 10))
+    expect(result.values.date).toBe(date)
     expect(result.errors.date).toBe('Choose today or a future date.')
     expect(result.message).toBe('Check the highlighted fields and try again.')
     expect(mocks.createTrip).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 
   it.each([
