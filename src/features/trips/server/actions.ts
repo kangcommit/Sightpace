@@ -6,7 +6,7 @@ import { getPrisma } from '@/lib/prisma'
 import { appRoutes } from '@/lib/routes'
 import { requireUser } from '@/lib/session'
 import { createTrip, deleteTrip } from '@/lib/trip-transactions'
-import { isDateTodayOrLater } from '../shared/date-rules'
+import { isDateTodayOrLater, isValidTimeZone } from '../shared/date-rules'
 
 const uuid = z.uuid()
 const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/
@@ -35,13 +35,19 @@ const createFields = z
       .trim()
       .min(1, 'Enter a destination label.')
       .max(120, 'Use 120 characters or fewer.'),
-    date: z.iso
-      .date('Enter a valid first day.')
-      .refine((date) => isDateTodayOrLater(date), 'Choose today or a future date.'),
+    date: z.iso.date('Enter a valid first day.'),
+    timeZone: z.string().refine(isValidTimeZone, 'Choose a valid local timezone.'),
     startTime,
     finishTime,
   })
   .superRefine((values, context) => {
+    if (!isDateTodayOrLater(values.date, undefined, values.timeZone))
+      context.addIssue({
+        code: 'custom',
+        path: ['date'],
+        message: 'Choose today or a future date.',
+      })
+
     if (
       clockPattern.test(values.startTime) &&
       clockPattern.test(values.finishTime) &&
@@ -94,8 +100,17 @@ export async function createTripAction(
     title: formString(formData, 'title'),
     destination: formString(formData, 'destination'),
     date: formString(formData, 'date'),
+    timeZone: formString(formData, 'timeZone') || 'UTC',
     startTime: formString(formData, 'startTime'),
     finishTime: formString(formData, 'finishTime'),
+  }
+  const stateValues = {
+    mutationId: values.mutationId,
+    title: values.title,
+    destination: values.destination,
+    date: values.date,
+    startTime: values.startTime,
+    finishTime: values.finishTime,
   }
 
   let user: Awaited<ReturnType<typeof requireUser>>
@@ -103,20 +118,18 @@ export async function createTripAction(
     user = await requireUser()
   } catch {
     return {
-      values: {
-        ...previous.values,
-        title: values.title,
-        destination: values.destination,
-        date: values.date,
-        startTime: values.startTime,
-        finishTime: values.finishTime,
-      },
+      values: { ...previous.values, ...stateValues },
       errors: {},
       message: 'We couldn’t confirm you’re signed in. Please try again.',
     }
   }
 
-  if (!user.ok) return { values, errors: {}, message: 'Sign in to create a trip.' }
+  if (!user.ok)
+    return {
+      values: { ...previous.values, ...stateValues },
+      errors: {},
+      message: 'Sign in to create a trip.',
+    }
 
   if (
     !hasOnlyFields(formData, [
@@ -124,19 +137,13 @@ export async function createTripAction(
       'title',
       'destination',
       'date',
+      'timeZone',
       'startTime',
       'finishTime',
     ])
   )
     return {
-      values: {
-        ...previous.values,
-        title: values.title,
-        destination: values.destination,
-        date: values.date,
-        startTime: values.startTime,
-        finishTime: values.finishTime,
-      },
+      values: { ...previous.values, ...stateValues },
       errors: {},
       message: 'Something went wrong. Refresh the form and try again.',
     }
@@ -147,14 +154,7 @@ export async function createTripAction(
     const flattened = z.flattenError(parsed.error).fieldErrors
 
     return {
-      values: {
-        ...previous.values,
-        title: values.title,
-        destination: values.destination,
-        date: values.date,
-        startTime: values.startTime,
-        finishTime: values.finishTime,
-      },
+      values: { ...previous.values, ...stateValues },
       errors: {
         title: flattened.title?.[0],
         destination: flattened.destination?.[0],
@@ -180,13 +180,17 @@ export async function createTripAction(
       ],
     })
 
-    if (!result.ok) return { values, errors: {}, message: result.error.message }
+    if (!result.ok) return { values: stateValues, errors: {}, message: result.error.message }
 
     redirect(appRoutes.trip(result.data.tripId))
   } catch (error) {
     unstable_rethrow(error)
 
-    return { values, errors: {}, message: 'We couldn’t create this trip. Please try again.' }
+    return {
+      values: stateValues,
+      errors: {},
+      message: 'We couldn’t create this trip. Please try again.',
+    }
   }
 }
 
