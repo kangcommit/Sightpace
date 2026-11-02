@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ChangeEvent } from 'react'
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { signInPath } from '@/lib/auth-redirect'
 import { appRoutes } from '@/lib/routes'
 import { type CreateTripState, createTripAction } from '../server/actions'
+import { todayDate } from '../shared/date-rules'
 
 export function CreateTripForm({
   initialState,
@@ -20,8 +21,19 @@ export function CreateTripForm({
 }) {
   const [state, action, pending] = useActionState(createTripAction, initialState)
   const [dateValue, setDateValue] = useState(initialState.values.date)
+  const [minimumDateValue, setMinimumDateValue] = useState(minimumDate)
+  const [timeZone, setTimeZone] = useState('UTC')
   const [startTimeValue, setStartTimeValue] = useState(initialState.values.startTime)
   const [finishTimeValue, setFinishTimeValue] = useState(initialState.values.finishTime)
+
+  useEffect(() => {
+    const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    const localToday = todayDate(localTimeZone)
+
+    setTimeZone(localTimeZone)
+    setMinimumDateValue(localToday)
+    setDateValue((current) => (current === minimumDate ? localToday : current))
+  }, [minimumDate])
 
   function handleDateChange(event: ChangeEvent<HTMLInputElement>) {
     setDateValue(event.target.value)
@@ -38,6 +50,7 @@ export function CreateTripForm({
   return (
     <form action={action} className="flex flex-col gap-5">
       <input type="hidden" name="mutationId" value={state.values.mutationId} />
+      <input type="hidden" name="timeZone" value={timeZone} />
       {state.message && !Object.values(state.errors).some(Boolean) && (
         <Alert variant="destructive">
           <AlertDescription>{state.message}</AlertDescription>
@@ -92,7 +105,7 @@ export function CreateTripForm({
             type="date"
             name="date"
             required
-            min={minimumDate}
+            min={minimumDateValue}
             value={dateValue}
             onChange={handleDateChange}
             className="block!"
