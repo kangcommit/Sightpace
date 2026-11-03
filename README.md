@@ -4,6 +4,12 @@
 
 Sightpace helps independent travelers see whether sightseeing stops fit around travel estimates and fixed bookings. Arrange a day, enter your own travel times, and see projected arrival times, late bookings, missing estimates, and overruns as your plan changes.
 
+## Try Sightpace
+
+- [Explore the public sample planner](https://sightpace.netlify.app/demo) — no account needed; the Bandung itinerary uses synthetic data, and edits are temporary.
+- [Open the production site](https://sightpace.netlify.app/) to see the landing page.
+- [Sign in to manage private trips](https://sightpace.netlify.app/sign-in) with Google. Sign in only if you want to save trips to your account.
+
 ## What you can do
 
 - Edit a synthetic Bandung itinerary and see its schedule recalculate immediately.
@@ -26,6 +32,13 @@ Travel times are entered by the traveler. Sightpace does not provide live routin
 
 The public sample itinerary is synthetic and available at `/demo`. Its edits are temporary; sign in to save a personal copy.
 
+## Engineering highlights
+
+- **Derived scheduling:** the app calculates projected starts and finishes from activity order, durations, travel estimates, and fixed booking times. A fixed booking stays at its booked time while projected arrival and lateness are shown separately. Unknown travel remains visible and makes later times provisional instead of being presented as a confirmed estimate.
+- **Reliable private saves:** server-side actions derive ownership from the authenticated session. Trip snapshots use revision checks to reject stale writes, and mutation receipts make retries safe when a response is lost. Validated browser drafts help recover edits, while PostgreSQL remains authoritative.
+- **Public-to-private flow:** the sample is editable without authentication. Saving a copy transfers the current synthetic itinerary through a dedicated authenticated action that creates fresh private records.
+- **Verification:** unit and component tests cover scheduling, validation, and save states; disposable PostgreSQL integration tests exercise persistence and ownership; Playwright checks cover browser journeys, responsive layouts, and keyboard interactions.
+
 ## Technology
 
 | Area           | Stack                                                                                           |
@@ -35,7 +48,7 @@ The public sample itinerary is synthetic and available at `/demo`. Its edits are
 | Data           | PostgreSQL, Prisma ORM 7 with the PostgreSQL driver adapter                                     |
 | Authentication | Better Auth with Google-only sign-in                                                            |
 | Verification   | Biome, TypeScript, Vitest, Testing Library, Playwright, disposable PostgreSQL integration tests |
-| Hosting        | Production site with private staging and PostgreSQL-backed trip storage                         |
+| Hosting        | Netlify and Neon PostgreSQL                                                                     |
 
 ## Run locally
 
