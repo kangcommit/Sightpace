@@ -28,14 +28,14 @@ The public sample itinerary is synthetic and available at `/demo`. Its edits are
 
 ## Technology
 
-| Area              | Stack                                                                                                      |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| Application       | Next.js App Router, React, strict TypeScript                                                               |
-| UI                | Tailwind CSS, shadcn/ui source components with Base UI primitives, Lucide icons                            |
-| Data              | PostgreSQL, Prisma ORM 7 with the PostgreSQL driver adapter                                                |
-| Authentication    | Better Auth with Google-only sign-in                                                                       |
-| Verification      | Biome, TypeScript, Vitest, Testing Library, Playwright, disposable PostgreSQL integration tests            |
-| Hosting            | Production site with private staging and PostgreSQL-backed trip storage                                      |
+| Area           | Stack                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Application    | Next.js App Router, React, strict TypeScript                                                    |
+| UI             | Tailwind CSS, shadcn/ui source components with Base UI primitives, Lucide icons                 |
+| Data           | PostgreSQL, Prisma ORM 7 with the PostgreSQL driver adapter                                     |
+| Authentication | Better Auth with Google-only sign-in                                                            |
+| Verification   | Biome, TypeScript, Vitest, Testing Library, Playwright, disposable PostgreSQL integration tests |
+| Hosting        | Production site with private staging and PostgreSQL-backed trip storage                         |
 
 ## Run locally
 
