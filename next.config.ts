@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
   distDir:
     process.env.SIGHTPACE_INTEGRATION === '1'
       ? '.next-integration'
@@ -10,6 +9,14 @@ const nextConfig: NextConfig = {
         : '.next',
   poweredByHeader: false,
   reactStrictMode: true,
+  turbopack: {
+    rules: {
+      '*.css': {
+        loaders: ['@tailwindcss/turbopack'],
+        as: '*.css',
+      },
+    },
+  },
 }
 
 export default nextConfig
