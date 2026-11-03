@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "next start",
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "typecheck": "tsc -b --pretty false",
@@ -49,7 +49,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",
     "@playwright/test": "^1.64.1",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/turbopack": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
