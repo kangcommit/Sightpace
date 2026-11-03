@@ -137,7 +137,10 @@ export function PrivateSession({
 
   if (logout === 'pending' || (logout === 'complete' && !storageFailed))
     return (
-      <section role="status" className="flex items-center gap-3">
+      <section
+        role="status"
+        className="bg-background fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-4 py-6 text-center"
+      >
         <LoaderCircle
           aria-hidden="true"
           className="size-5 animate-spin motion-reduce:animate-none"
